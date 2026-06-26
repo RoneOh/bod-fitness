@@ -1,6 +1,6 @@
 (function () {
-  const STORAGE_KEY = "bod.fitness.mvp.v3";
-  const LEGACY_KEYS = ["bod.fitness.mvp.v2", "bod.fitness.mvp.v1"];
+  const STORAGE_KEY = "bod.fitness.data";
+  const LEGACY_KEYS = ["bod.fitness.mvp.v3", "bod.fitness.mvp.v2", "bod.fitness.mvp.v1"];
   const todayKey = () => dateKey(new Date());
   const dateKey = (date) => {
     const year = date.getFullYear();
@@ -73,6 +73,7 @@
   };
 
   let state = loadState();
+  saveState();
   let chartRange = 7;
   let toastTimer;
   let selectedCategory = "外卖";
@@ -835,14 +836,15 @@
     try {
       if (navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(shareText);
-        showToast("宣传语和链接已复制");
+        showToast("已复制");
       } else if (navigator.share) {
         await navigator.share({ text: shareText });
+        showToast("已复制");
       } else {
-        showToast("可以复制浏览器地址分享");
+        showToast("复制失败");
       }
     } catch {
-      showToast("分享已取消");
+      showToast("复制失败");
     }
   });
 
