@@ -830,18 +830,14 @@
   });
 
   els.shareButton.addEventListener("click", async () => {
-    const shareData = {
-      title: "BOD 健身记录",
-      text: "用 BOD 记录训练、饮食、体重和喝水，看看今天距离目标还差多少。",
-      url: window.location.href,
-    };
+    const shareText = `BOD 健身记录：记录训练、饮食、体重和喝水，看看今天距离目标还差多少。\n${window.location.href}`;
 
     try {
-      if (navigator.share) {
-        await navigator.share(shareData);
-      } else if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(window.location.href);
-        showToast("链接已复制");
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(shareText);
+        showToast("宣传语和链接已复制");
+      } else if (navigator.share) {
+        await navigator.share({ text: shareText });
       } else {
         showToast("可以复制浏览器地址分享");
       }
