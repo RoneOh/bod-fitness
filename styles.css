@@ -278,6 +278,14 @@ h2 {
   --accent: var(--amber);
 }
 
+.accent-food {
+  --accent: #8a63d2;
+}
+
+.accent-train {
+  --accent: var(--amber);
+}
+
 .accent-weight {
   --accent: var(--green);
 }
@@ -372,13 +380,186 @@ h2 {
 
 .tabs {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 6px;
   margin: 14px 0;
   padding: 5px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.72);
+}
+
+.diet-target-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 14px;
+  border: 1px solid rgba(138, 99, 210, 0.22);
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(138, 99, 210, 0.11), rgba(47, 143, 91, 0.08)),
+    #fbfcfa;
+  padding: 14px;
+}
+
+.diet-target-panel h2 {
+  margin-bottom: 6px;
+  color: #5f42a5;
+  font-size: 1.55rem;
+}
+
+.diet-target-panel p:last-child {
+  margin-bottom: 0;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.macro-row {
+  display: grid;
+  min-width: 112px;
+  justify-items: center;
+  gap: 6px;
+  border: 1px solid rgba(47, 143, 91, 0.18);
+  border-radius: 8px;
+  background: white;
+  padding: 10px;
+}
+
+.macro-row span {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.macro-row strong {
+  color: var(--green);
+  font-size: 1.25rem;
+}
+
+.food-picker {
+  display: grid;
+  gap: 10px;
+}
+
+.food-categories,
+.portion-options {
+  display: grid;
+  gap: 6px;
+}
+
+.food-categories {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.portion-options {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.food-categories button,
+.portion-options button {
+  min-height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfcfa;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.food-categories button.active,
+.portion-options button.active {
+  border-color: rgba(138, 99, 210, 0.36);
+  background: #5f42a5;
+  color: white;
+}
+
+.food-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.food-card {
+  display: grid;
+  min-height: 78px;
+  justify-items: start;
+  gap: 5px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfcfa;
+  color: var(--ink);
+  padding: 10px;
+  text-align: left;
+}
+
+.food-card strong,
+.food-card span {
+  display: block;
+}
+
+.food-card strong {
+  font-size: 0.92rem;
+}
+
+.food-card span {
+  color: var(--muted);
+  font-size: 0.74rem;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.food-card.active {
+  border-color: rgba(138, 99, 210, 0.42);
+  background: rgba(138, 99, 210, 0.1);
+}
+
+.meal-estimate {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.meal-estimate div {
+  border: 1px solid rgba(138, 99, 210, 0.2);
+  border-radius: 8px;
+  background: #fbfcfa;
+  padding: 12px;
+}
+
+.meal-estimate span,
+.meal-estimate strong {
+  display: block;
+}
+
+.meal-estimate span {
+  color: var(--muted);
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+
+.meal-estimate strong {
+  margin-top: 5px;
+  color: #5f42a5;
+  font-size: 1.22rem;
+}
+
+.manual-meal {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfcfa;
+  padding: 12px;
+}
+
+.manual-meal summary {
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 900;
+}
+
+.manual-meal label {
+  margin-top: 12px;
 }
 
 .tab,
@@ -550,7 +731,9 @@ canvas {
 }
 
 .bar {
-  display: grid;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
   align-items: end;
   min-height: 126px;
   gap: 6px;
@@ -562,9 +745,14 @@ canvas {
 
 .bar span {
   display: block;
+  width: 100%;
   min-height: 8px;
   border-radius: 5px 5px 2px 2px;
   background: linear-gradient(180deg, var(--coral), var(--amber));
+}
+
+.bar .food-bar {
+  background: linear-gradient(180deg, #8a63d2, #2f75b5);
 }
 
 dialog {
@@ -658,6 +846,35 @@ dialog::backdrop {
   }
 
   .achievement-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .tabs {
+    gap: 4px;
+  }
+
+  .tab {
+    min-height: 36px;
+    font-size: 0.78rem;
+  }
+
+  .diet-target-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .macro-row {
+    justify-items: start;
+  }
+
+  .food-categories {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .food-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .meal-estimate {
     grid-template-columns: 1fr;
   }
 }

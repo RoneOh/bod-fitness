@@ -20,7 +20,7 @@
       </header>
 
       <section class="launch-strip" aria-label="分享和反馈">
-        <p>数据保存在本设备，适合先记录训练节奏。</p>
+        <p>数据保存在本设备，适合先记录训练、饮食和体重趋势。</p>
         <div>
           <button type="button" id="shareButton">分享</button>
           <a id="feedbackLink" href="mailto:?subject=BOD%20%E5%81%A5%E8%BA%AB%E8%AE%B0%E5%BD%95%E5%8F%8D%E9%A6%88">反馈</a>
@@ -29,11 +29,11 @@
 
       <section class="goal-panel" aria-labelledby="goalTitle">
         <div class="goal-copy">
-          <p class="eyebrow">今日目标</p>
-          <h2 id="goalTitle">完成你的训练消耗</h2>
-          <p id="goalHint">先设置目标，BOD 会帮你计算每日建议消耗。</p>
+          <p class="eyebrow">今日饮食目标</p>
+          <h2 id="goalTitle">吃到合适热量</h2>
+          <p id="goalHint">BOD 会结合你的身高、体重、目标和体重趋势，估算今日建议摄入。</p>
         </div>
-        <div class="goal-ring" aria-label="今日消耗目标完成度">
+        <div class="goal-ring" aria-label="今日摄入目标完成度">
           <svg viewBox="0 0 120 120" role="img">
             <circle class="ring-track" cx="60" cy="60" r="50"></circle>
             <circle class="ring-progress" id="goalRing" cx="60" cy="60" r="50"></circle>
@@ -46,14 +46,19 @@
       </section>
 
       <section class="summary-grid" aria-label="今日状态">
-        <article class="metric-card accent-energy">
-          <span>消耗</span>
-          <strong id="todayCalories">0</strong>
+        <article class="metric-card accent-food">
+          <span>已吃</span>
+          <strong id="todayIntake">0</strong>
           <small>kcal</small>
         </article>
         <article class="metric-card accent-target">
-          <span>目标</span>
-          <strong id="targetCalories">0</strong>
+          <span>摄入目标</span>
+          <strong id="dietTarget">0</strong>
+          <small>kcal</small>
+        </article>
+        <article class="metric-card accent-energy">
+          <span>运动消耗</span>
+          <strong id="todayCalories">0</strong>
           <small>kcal</small>
         </article>
         <article class="metric-card accent-water">
@@ -66,6 +71,11 @@
           <strong id="latestWeight">--</strong>
           <small>kg</small>
         </article>
+        <article class="metric-card accent-train">
+          <span>训练目标</span>
+          <strong id="targetCalories">0</strong>
+          <small>kcal</small>
+        </article>
       </section>
 
       <section class="coach-panel" aria-labelledby="coachTitle">
@@ -73,25 +83,94 @@
           <p class="eyebrow">下一步行动</p>
           <h2 id="coachTitle">今日建议</h2>
         </div>
-        <p id="recommendationText">先记录一条训练或体重，BOD 会给你更具体的建议。</p>
+        <p id="recommendationText">先设置目标并记录饮食或训练，BOD 会给你更具体的建议。</p>
       </section>
 
       <section class="achievement-panel" aria-labelledby="achievementTitle">
         <div class="section-heading compact">
           <h2 id="achievementTitle">今日成就</h2>
-          <span id="achievementCount">0/3</span>
+          <span id="achievementCount">0/5</span>
         </div>
         <div class="achievement-grid" id="achievementGrid"></div>
       </section>
 
       <nav class="tabs" aria-label="功能切换">
-        <button class="tab active" type="button" data-tab="workout">训练</button>
+        <button class="tab active" type="button" data-tab="diet">饮食</button>
+        <button class="tab" type="button" data-tab="workout">训练</button>
         <button class="tab" type="button" data-tab="body">体重</button>
         <button class="tab" type="button" data-tab="water">喝水</button>
         <button class="tab" type="button" data-tab="trend">趋势</button>
       </nav>
 
-      <section class="tab-panel active" id="workoutPanel">
+      <section class="tab-panel active" id="dietPanel">
+        <div class="diet-target-panel">
+          <div>
+            <p class="eyebrow">今日建议摄入</p>
+            <h2><span id="dietTargetLarge">0</span> kcal</h2>
+            <p id="dietReason">根据当前资料估算。</p>
+          </div>
+          <div class="macro-row">
+            <span>蛋白质建议</span>
+            <strong id="proteinTarget">0g</strong>
+          </div>
+        </div>
+        <form id="mealForm" class="form-stack">
+          <div class="food-picker">
+            <div class="section-heading compact">
+              <h2>选一个常见食物</h2>
+              <span id="selectedFoodLabel">未选择</span>
+            </div>
+            <div class="food-categories" id="foodCategories" aria-label="食物分类"></div>
+            <div class="food-grid" id="foodGrid"></div>
+          </div>
+          <div>
+            <div class="section-heading compact">
+              <h2>份量</h2>
+              <span id="portionLabel">标准份</span>
+            </div>
+            <div class="portion-options" id="portionOptions" role="group" aria-label="份量选择">
+              <button type="button" data-portion="0.5">半份</button>
+              <button class="active" type="button" data-portion="1">标准</button>
+              <button type="button" data-portion="1.5">大份</button>
+            </div>
+          </div>
+          <div class="meal-estimate">
+            <div>
+              <span>估算热量</span>
+              <strong id="estimatedCalories">-- kcal</strong>
+            </div>
+            <div>
+              <span>估算蛋白质</span>
+              <strong id="estimatedProtein">-- g</strong>
+            </div>
+          </div>
+          <details class="manual-meal">
+            <summary>手动修正或自定义食物</summary>
+            <label>
+              食物名称
+              <input id="mealName" type="text" maxlength="40" placeholder="例如：鸡胸饭 / 牛奶麦片" />
+            </label>
+            <div class="inline-fields">
+              <label>
+                热量 kcal
+                <input id="mealCalories" type="number" min="1" max="5000" placeholder="不知道可不填，会按名称估算" />
+              </label>
+              <label>
+                蛋白质 g
+                <input id="mealProtein" type="number" min="0" max="300" step="1" placeholder="可选" />
+              </label>
+            </div>
+          </details>
+          <button class="primary-button" type="submit">保存饮食</button>
+        </form>
+        <div class="section-heading">
+          <h2>今天吃了什么</h2>
+          <span id="mealCount">0 条</span>
+        </div>
+        <div class="list" id="mealList"></div>
+      </section>
+
+      <section class="tab-panel" id="workoutPanel">
         <form id="workoutForm" class="form-stack">
           <label>
             训练类型
@@ -125,7 +204,6 @@
           </label>
           <button class="primary-button" type="submit">保存训练</button>
         </form>
-
         <div class="section-heading">
           <h2>今天练了什么</h2>
           <span id="workoutCount">0 条</span>
@@ -173,8 +251,8 @@
         </div>
         <canvas id="weightChart" width="680" height="320" aria-label="体重趋势图"></canvas>
         <div class="section-heading">
-          <h2>训练热量</h2>
-          <span id="weekCalories">本周 0 kcal</span>
+          <h2>热量趋势</h2>
+          <span id="weekCalories">本周运动 0 kcal</span>
         </div>
         <div class="mini-bars" id="calorieBars"></div>
       </section>
@@ -189,7 +267,7 @@
           </div>
           <button class="icon-button" value="cancel" type="submit" aria-label="关闭设置" title="关闭">×</button>
         </div>
-        <p class="dialog-intro" id="settingsIntro">第一次使用先选一个方向，BOD 会用它来计算每日消耗目标和行动建议。</p>
+        <p class="dialog-intro" id="settingsIntro">第一次使用先选一个方向，BOD 会用它来计算饮食目标、训练目标和行动建议。</p>
         <label>
           身高 cm
           <input id="heightInput" type="number" min="120" max="230" required />
