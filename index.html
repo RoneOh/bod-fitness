@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>BOD 健身记录</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">今日记录</p>
+          <h1>BOD</h1>
+        </div>
+        <button class="goal-button" id="settingsButton" type="button">
+          <span>目标</span>
+          <strong id="goalButtonLabel">减脂</strong>
+        </button>
+      </header>
+
+      <section class="launch-strip" aria-label="分享和反馈">
+        <p>数据保存在本设备，适合先记录训练节奏。</p>
+        <div>
+          <button type="button" id="shareButton">分享</button>
+          <a id="feedbackLink" href="mailto:?subject=BOD%20%E5%81%A5%E8%BA%AB%E8%AE%B0%E5%BD%95%E5%8F%8D%E9%A6%88">反馈</a>
+        </div>
+      </section>
+
+      <section class="goal-panel" aria-labelledby="goalTitle">
+        <div class="goal-copy">
+          <p class="eyebrow">今日目标</p>
+          <h2 id="goalTitle">完成你的训练消耗</h2>
+          <p id="goalHint">先设置目标，BOD 会帮你计算每日建议消耗。</p>
+        </div>
+        <div class="goal-ring" aria-label="今日消耗目标完成度">
+          <svg viewBox="0 0 120 120" role="img">
+            <circle class="ring-track" cx="60" cy="60" r="50"></circle>
+            <circle class="ring-progress" id="goalRing" cx="60" cy="60" r="50"></circle>
+          </svg>
+          <div>
+            <strong id="goalPercent">0%</strong>
+            <span id="goalRemain">还差 0 kcal</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="summary-grid" aria-label="今日状态">
+        <article class="metric-card accent-energy">
+          <span>消耗</span>
+          <strong id="todayCalories">0</strong>
+          <small>kcal</small>
+        </article>
+        <article class="metric-card accent-target">
+          <span>目标</span>
+          <strong id="targetCalories">0</strong>
+          <small>kcal</small>
+        </article>
+        <article class="metric-card accent-water">
+          <span>喝水</span>
+          <strong id="todayWater">0</strong>
+          <small>ml</small>
+        </article>
+        <article class="metric-card accent-weight">
+          <span>体重</span>
+          <strong id="latestWeight">--</strong>
+          <small>kg</small>
+        </article>
+      </section>
+
+      <section class="coach-panel" aria-labelledby="coachTitle">
+        <div>
+          <p class="eyebrow">下一步行动</p>
+          <h2 id="coachTitle">今日建议</h2>
+        </div>
+        <p id="recommendationText">先记录一条训练或体重，BOD 会给你更具体的建议。</p>
+      </section>
+
+      <section class="achievement-panel" aria-labelledby="achievementTitle">
+        <div class="section-heading compact">
+          <h2 id="achievementTitle">今日成就</h2>
+          <span id="achievementCount">0/3</span>
+        </div>
+        <div class="achievement-grid" id="achievementGrid"></div>
+      </section>
+
+      <nav class="tabs" aria-label="功能切换">
+        <button class="tab active" type="button" data-tab="workout">训练</button>
+        <button class="tab" type="button" data-tab="body">体重</button>
+        <button class="tab" type="button" data-tab="water">喝水</button>
+        <button class="tab" type="button" data-tab="trend">趋势</button>
+      </nav>
+
+      <section class="tab-panel active" id="workoutPanel">
+        <form id="workoutForm" class="form-stack">
+          <label>
+            训练类型
+            <select id="workoutType" required>
+              <option value="strength">力量训练</option>
+              <option value="cardio">有氧训练</option>
+              <option value="hiit">HIIT</option>
+              <option value="yoga">瑜伽/拉伸</option>
+              <option value="walk">快走</option>
+              <option value="run">跑步</option>
+              <option value="cycling">骑行</option>
+            </select>
+          </label>
+          <div class="inline-fields">
+            <label>
+              时长
+              <input id="workoutMinutes" type="number" min="1" max="360" value="45" required />
+            </label>
+            <label>
+              强度
+              <select id="workoutIntensity">
+                <option value="light">轻松</option>
+                <option value="moderate" selected>中等</option>
+                <option value="hard">较高</option>
+              </select>
+            </label>
+          </div>
+          <label>
+            备注
+            <input id="workoutNote" type="text" maxlength="80" placeholder="例如：胸肩三头 / 跑步机坡度 6" />
+          </label>
+          <button class="primary-button" type="submit">保存训练</button>
+        </form>
+
+        <div class="section-heading">
+          <h2>今天练了什么</h2>
+          <span id="workoutCount">0 条</span>
+        </div>
+        <div class="list" id="workoutList"></div>
+      </section>
+
+      <section class="tab-panel" id="bodyPanel">
+        <form id="weightForm" class="form-stack">
+          <label>
+            当前体重 kg
+            <input id="weightInput" type="number" min="20" max="300" step="0.1" placeholder="例如 72.5" required />
+          </label>
+          <button class="primary-button" type="submit">记录体重</button>
+        </form>
+        <div class="section-heading">
+          <h2>最近体重</h2>
+          <span id="weightTrendLabel">暂无趋势</span>
+        </div>
+        <div class="list" id="weightList"></div>
+      </section>
+
+      <section class="tab-panel" id="waterPanel">
+        <div class="water-actions" aria-label="快捷喝水记录">
+          <button type="button" data-water="250">+250ml</button>
+          <button type="button" data-water="500">+500ml</button>
+          <button type="button" data-water="750">+750ml</button>
+        </div>
+        <form id="waterForm" class="form-stack">
+          <label>
+            自定义 ml
+            <input id="waterInput" type="number" min="50" max="3000" step="50" placeholder="例如 300" />
+          </label>
+          <button class="primary-button" type="submit">增加喝水量</button>
+        </form>
+      </section>
+
+      <section class="tab-panel" id="trendPanel">
+        <div class="section-heading">
+          <h2>体重趋势</h2>
+          <div class="segmented" role="group" aria-label="趋势范围">
+            <button class="active" type="button" data-range="7">7 天</button>
+            <button type="button" data-range="30">30 天</button>
+          </div>
+        </div>
+        <canvas id="weightChart" width="680" height="320" aria-label="体重趋势图"></canvas>
+        <div class="section-heading">
+          <h2>训练热量</h2>
+          <span id="weekCalories">本周 0 kcal</span>
+        </div>
+        <div class="mini-bars" id="calorieBars"></div>
+      </section>
+    </main>
+
+    <dialog id="settingsDialog">
+      <form method="dialog" class="settings-card" id="profileForm">
+        <div class="section-heading compact">
+          <div>
+            <p class="eyebrow" id="settingsEyebrow">个人设置</p>
+            <h2 id="settingsTitle">确立你的目标</h2>
+          </div>
+          <button class="icon-button" value="cancel" type="submit" aria-label="关闭设置" title="关闭">×</button>
+        </div>
+        <p class="dialog-intro" id="settingsIntro">第一次使用先选一个方向，BOD 会用它来计算每日消耗目标和行动建议。</p>
+        <label>
+          身高 cm
+          <input id="heightInput" type="number" min="120" max="230" required />
+        </label>
+        <label>
+          当前体重 kg
+          <input id="profileWeightInput" type="number" min="20" max="300" step="0.1" required />
+        </label>
+        <label>
+          目标
+          <select id="goalInput">
+            <option value="fat_loss">减脂</option>
+            <option value="muscle_gain">增肌</option>
+            <option value="maintain">保持</option>
+          </select>
+        </label>
+        <button class="primary-button" value="default" type="submit">开始记录</button>
+      </form>
+    </dialog>
+
+    <div class="toast" id="achievementToast" role="status" aria-live="polite"></div>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
