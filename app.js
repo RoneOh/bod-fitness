@@ -99,6 +99,7 @@
     achievementCount: document.getElementById("achievementCount"),
     achievementToast: document.getElementById("achievementToast"),
     shareButton: document.getElementById("shareButton"),
+    copyEmailButton: document.getElementById("copyEmailButton"),
     foodCategories: document.getElementById("foodCategories"),
     foodGrid: document.getElementById("foodGrid"),
     selectedFoodLabel: document.getElementById("selectedFoodLabel"),
@@ -846,6 +847,20 @@
       }
     } catch {
       showToast("分享已取消");
+    }
+  });
+
+  els.copyEmailButton.addEventListener("click", async () => {
+    const email = "BOD8808@163.com";
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(email);
+        showToast("邮箱已复制");
+      } else {
+        showToast(`反馈邮箱：${email}`);
+      }
+    } catch {
+      showToast(`反馈邮箱：${email}`);
     }
   });
 
