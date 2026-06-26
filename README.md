@@ -20,16 +20,6 @@ BOD 是一个手机优先的健身记录 MVP，用于记录饮食、训练、体
 
 直接打开 `index.html`，或使用任意静态服务器预览。
 
-## 免费部署建议
-
-这个项目是纯静态站，可以部署到以下免费平台：
-
-- GitHub Pages
-- Netlify
-- Cloudflare Pages
-- Vercel
-
-第一阶段推荐 GitHub Pages 或 Netlify。用户多起来以后，再考虑账号系统、云同步和后端部署。
 
 ## 隐私说明
 
