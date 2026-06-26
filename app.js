@@ -101,6 +101,11 @@
     achievementToast: document.getElementById("achievementToast"),
     shareButton: document.getElementById("shareButton"),
     copyEmailButton: document.getElementById("copyEmailButton"),
+    installGuide: document.getElementById("installGuide"),
+    installPlatform: document.getElementById("installPlatform"),
+    installTitle: document.getElementById("installTitle"),
+    installText: document.getElementById("installText"),
+    installSteps: document.getElementById("installSteps"),
     foodCategories: document.getElementById("foodCategories"),
     foodGrid: document.getElementById("foodGrid"),
     selectedFoodLabel: document.getElementById("selectedFoodLabel"),
@@ -688,6 +693,51 @@
     els.settingsDialog.showModal();
   }
 
+  function renderInstallGuide() {
+    const ua = navigator.userAgent || "";
+    const isStandalone = window.matchMedia?.("(display-mode: standalone)").matches || window.navigator.standalone;
+    const isIOS = /iphone|ipad|ipod/i.test(ua);
+    const isAndroid = /android/i.test(ua);
+    const isChrome = /chrome|crios/i.test(ua) && !/edg/i.test(ua);
+    const isSafari = /safari/i.test(ua) && !/chrome|crios|android/i.test(ua);
+    let guide;
+
+    if (isStandalone) {
+      guide = {
+        platform: "已安装",
+        title: "BOD 已在桌面模式运行",
+        text: "之后可以直接从桌面图标打开。",
+        steps: ["继续记录饮食、训练、体重和喝水。"],
+      };
+    } else if (isIOS) {
+      guide = {
+        platform: isSafari ? "iPhone / Safari" : "iPhone",
+        title: "添加到 iPhone 主屏幕",
+        text: "iPhone 需要使用 Safari 的分享菜单添加。",
+        steps: ["用 Safari 打开这个网页。", "点击底部分享按钮。", "选择“添加到主屏幕”。", "点击“添加”。"],
+      };
+    } else if (isAndroid) {
+      guide = {
+        platform: isChrome ? "Android / Chrome" : "Android",
+        title: "添加到 Android 桌面",
+        text: "Android 浏览器通常会在菜单里提供安装入口。",
+        steps: ["点击浏览器右上角菜单。", "选择“安装应用”或“添加到主屏幕”。", "确认后从桌面图标打开 BOD。"],
+      };
+    } else {
+      guide = {
+        platform: "桌面浏览器",
+        title: "安装为桌面应用",
+        text: "如果浏览器支持 PWA，可以从地址栏或菜单安装。",
+        steps: ["查看地址栏右侧是否有安装图标。", "或打开浏览器菜单，选择“安装”或“添加到主屏幕”。"],
+      };
+    }
+
+    els.installPlatform.textContent = guide.platform;
+    els.installTitle.textContent = guide.title;
+    els.installText.textContent = guide.text;
+    els.installSteps.innerHTML = guide.steps.map((step) => `<li>${step}</li>`).join("");
+  }
+
   document.querySelectorAll(".tab").forEach((tab) => {
     tab.addEventListener("click", () => {
       document.querySelectorAll(".tab").forEach((item) => item.classList.remove("active"));
@@ -863,6 +913,7 @@
   });
 
   updateAchievements(false);
+  renderInstallGuide();
   render();
   if (!state.profile.onboarded) {
     setTimeout(() => openSettings(true), 250);

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192">
+  <rect width="192" height="192" rx="35" fill="#f6f8f3"/>
+  <circle cx="146" cy="46" r="31" fill="#2f8f5b" opacity="0.16"/>
+  <rect x="35" y="35" width="123" height="123" rx="23" fill="#ffffff" stroke="#dfe6dc" stroke-width="2"/>
+  <text x="50%" y="49%" text-anchor="middle" dominant-baseline="middle" font-family="Arial, sans-serif" font-size="48" font-weight="900" fill="#19211d">BOD</text>
+  <rect x="54" y="127" width="84" height="13" rx="7" fill="#2f8f5b"/>
+</svg>

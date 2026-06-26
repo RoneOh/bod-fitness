@@ -3,8 +3,13 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#2f8f5b" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="BOD" />
     <title>BOD 健身记录</title>
-    <link rel="stylesheet" href="./styles.css?v=20260627-stable-data" />
+    <link rel="stylesheet" href="./styles.css?v=20260627-install-guide" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="./icons/icon-192.svg" />
   </head>
   <body>
     <main class="app-shell">
@@ -26,6 +31,15 @@
           <a id="feedbackLink" href="mailto:BOD8808@163.com?subject=BOD%20%E5%81%A5%E8%BA%AB%E8%AE%B0%E5%BD%95%E5%8F%8D%E9%A6%88">反馈</a>
           <button type="button" id="copyEmailButton">复制邮箱</button>
         </div>
+      </section>
+
+      <section class="install-guide" id="installGuide" aria-labelledby="installTitle">
+        <div>
+          <p class="eyebrow" id="installPlatform">安装到桌面</p>
+          <h2 id="installTitle">把 BOD 添加到手机桌面</h2>
+          <p id="installText">打开浏览器菜单，选择添加到主屏幕。</p>
+        </div>
+        <ol id="installSteps"></ol>
       </section>
 
       <section class="goal-panel" aria-labelledby="goalTitle">
@@ -291,6 +305,13 @@
 
     <div class="toast" id="achievementToast" role="status" aria-live="polite"></div>
 
-    <script src="./app.js?v=20260627-stable-data"></script>
+    <script src="./app.js?v=20260627-install-guide"></script>
+    <script>
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker.register("./sw.js");
+        });
+      }
+    </script>
   </body>
 </html>
