@@ -1,9 +1,9 @@
-const CACHE_NAME = "bod-pwa-20260627-install-guide";
+const CACHE_NAME = "bod-pwa-20260627-smart-training";
 const ASSETS = [
   "./",
   "./index.html",
-  "./styles.css?v=20260627-install-guide",
-  "./app.js?v=20260627-install-guide",
+  "./styles.css?v=20260627-smart-training",
+  "./app.js?v=20260627-smart-training",
   "./manifest.webmanifest",
   "./icons/icon-192.svg",
   "./icons/icon-512.svg",

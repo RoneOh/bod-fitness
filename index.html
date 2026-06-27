@@ -7,7 +7,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="BOD" />
     <title>BOD 健身记录</title>
-    <link rel="stylesheet" href="./styles.css?v=20260627-install-guide" />
+    <link rel="stylesheet" href="./styles.css?v=20260627-smart-training" />
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="apple-touch-icon" href="./icons/icon-192.svg" />
   </head>
@@ -15,7 +15,7 @@
     <main class="app-shell">
       <header class="topbar">
         <div>
-          <p class="eyebrow">今日记录</p>
+          <p class="eyebrow">健身记录</p>
           <h1>BOD</h1>
         </div>
         <button class="goal-button" id="settingsButton" type="button">
@@ -24,101 +24,77 @@
         </button>
       </header>
 
-      <section class="launch-strip" aria-label="分享和反馈">
-        <p>数据保存在本设备，适合先记录训练、饮食和体重趋势。</p>
-        <div>
-          <button type="button" id="shareButton">分享</button>
-          <a id="feedbackLink" href="mailto:BOD8808@163.com?subject=BOD%20%E5%81%A5%E8%BA%AB%E8%AE%B0%E5%BD%95%E5%8F%8D%E9%A6%88">反馈</a>
-          <button type="button" id="copyEmailButton">复制邮箱</button>
-        </div>
-      </section>
-
-      <section class="install-guide" id="installGuide" aria-labelledby="installTitle">
-        <div>
-          <p class="eyebrow" id="installPlatform">安装到桌面</p>
-          <h2 id="installTitle">把 BOD 添加到手机桌面</h2>
-          <p id="installText">打开浏览器菜单，选择添加到主屏幕。</p>
-        </div>
-        <ol id="installSteps"></ol>
-      </section>
-
-      <section class="goal-panel" aria-labelledby="goalTitle">
-        <div class="goal-copy">
-          <p class="eyebrow">今日饮食目标</p>
-          <h2 id="goalTitle">吃到合适热量</h2>
-          <p id="goalHint">BOD 会结合你的身高、体重、目标和体重趋势，估算今日建议摄入。</p>
-        </div>
-        <div class="goal-ring" aria-label="今日摄入目标完成度">
-          <svg viewBox="0 0 120 120" role="img">
-            <circle class="ring-track" cx="60" cy="60" r="50"></circle>
-            <circle class="ring-progress" id="goalRing" cx="60" cy="60" r="50"></circle>
-          </svg>
-          <div>
-            <strong id="goalPercent">0%</strong>
-            <span id="goalRemain">还差 0 kcal</span>
+      <section class="app-page active" id="homePage" data-page="home">
+        <section class="goal-panel" aria-labelledby="goalTitle">
+          <div class="goal-copy">
+            <p class="eyebrow">今日饮食目标</p>
+            <h2 id="goalTitle">吃到合适热量</h2>
+            <p id="goalHint">BOD 会结合你的身高、体重、目标和体重趋势，估算今日建议摄入。</p>
           </div>
-        </div>
+          <div class="goal-ring" aria-label="今日摄入目标完成度">
+            <svg viewBox="0 0 120 120" role="img">
+              <circle class="ring-track" cx="60" cy="60" r="50"></circle>
+              <circle class="ring-progress" id="goalRing" cx="60" cy="60" r="50"></circle>
+            </svg>
+            <div>
+              <strong id="goalPercent">0%</strong>
+              <span id="goalRemain">还差 0 kcal</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="summary-grid" aria-label="今日状态">
+          <article class="metric-card accent-food">
+            <span>已吃</span>
+            <strong id="todayIntake">0</strong>
+            <small>kcal</small>
+          </article>
+          <article class="metric-card accent-target">
+            <span>摄入目标</span>
+            <strong id="dietTarget">0</strong>
+            <small>kcal</small>
+          </article>
+          <article class="metric-card accent-energy">
+            <span>运动消耗</span>
+            <strong id="todayCalories">0</strong>
+            <small>kcal</small>
+          </article>
+          <article class="metric-card accent-water">
+            <span>喝水</span>
+            <strong id="todayWater">0</strong>
+            <small>ml</small>
+          </article>
+          <article class="metric-card accent-weight">
+            <span>体重</span>
+            <strong id="latestWeight">--</strong>
+            <small>kg</small>
+          </article>
+          <article class="metric-card accent-train">
+            <span>训练目标</span>
+            <strong id="targetCalories">0</strong>
+            <small>kcal</small>
+          </article>
+        </section>
+
+        <section class="coach-panel" aria-labelledby="coachTitle">
+          <div>
+            <p class="eyebrow">下一步行动</p>
+            <h2 id="coachTitle">今日建议</h2>
+          </div>
+          <p id="recommendationText">先设置目标并记录饮食或训练，BOD 会给你更具体的建议。</p>
+        </section>
+
+        <section class="achievement-panel" aria-labelledby="achievementTitle">
+          <div class="section-heading compact">
+            <h2 id="achievementTitle">今日成就</h2>
+            <span id="achievementCount">0/5</span>
+          </div>
+          <div class="achievement-grid" id="achievementGrid"></div>
+        </section>
       </section>
 
-      <section class="summary-grid" aria-label="今日状态">
-        <article class="metric-card accent-food">
-          <span>已吃</span>
-          <strong id="todayIntake">0</strong>
-          <small>kcal</small>
-        </article>
-        <article class="metric-card accent-target">
-          <span>摄入目标</span>
-          <strong id="dietTarget">0</strong>
-          <small>kcal</small>
-        </article>
-        <article class="metric-card accent-energy">
-          <span>运动消耗</span>
-          <strong id="todayCalories">0</strong>
-          <small>kcal</small>
-        </article>
-        <article class="metric-card accent-water">
-          <span>喝水</span>
-          <strong id="todayWater">0</strong>
-          <small>ml</small>
-        </article>
-        <article class="metric-card accent-weight">
-          <span>体重</span>
-          <strong id="latestWeight">--</strong>
-          <small>kg</small>
-        </article>
-        <article class="metric-card accent-train">
-          <span>训练目标</span>
-          <strong id="targetCalories">0</strong>
-          <small>kcal</small>
-        </article>
-      </section>
-
-      <section class="coach-panel" aria-labelledby="coachTitle">
-        <div>
-          <p class="eyebrow">下一步行动</p>
-          <h2 id="coachTitle">今日建议</h2>
-        </div>
-        <p id="recommendationText">先设置目标并记录饮食或训练，BOD 会给你更具体的建议。</p>
-      </section>
-
-      <section class="achievement-panel" aria-labelledby="achievementTitle">
-        <div class="section-heading compact">
-          <h2 id="achievementTitle">今日成就</h2>
-          <span id="achievementCount">0/5</span>
-        </div>
-        <div class="achievement-grid" id="achievementGrid"></div>
-      </section>
-
-      <nav class="tabs" aria-label="功能切换">
-        <button class="tab active" type="button" data-tab="diet">饮食</button>
-        <button class="tab" type="button" data-tab="workout">训练</button>
-        <button class="tab" type="button" data-tab="body">体重</button>
-        <button class="tab" type="button" data-tab="water">喝水</button>
-        <button class="tab" type="button" data-tab="trend">趋势</button>
-      </nav>
-
-      <section class="tab-panel active" id="dietPanel">
-        <div class="diet-target-panel">
+      <section class="app-page" id="dietPage" data-page="diet">
+        <section class="diet-target-panel">
           <div>
             <p class="eyebrow">今日建议摄入</p>
             <h2><span id="dietTargetLarge">0</span> kcal</h2>
@@ -128,7 +104,8 @@
             <span>蛋白质建议</span>
             <strong id="proteinTarget">0g</strong>
           </div>
-        </div>
+        </section>
+
         <form id="mealForm" class="form-stack">
           <div class="food-picker">
             <div class="section-heading compact">
@@ -178,6 +155,7 @@
           </details>
           <button class="primary-button" type="submit">保存饮食</button>
         </form>
+
         <div class="section-heading">
           <h2>今天吃了什么</h2>
           <span id="mealCount">0 条</span>
@@ -185,8 +163,68 @@
         <div class="list" id="mealList"></div>
       </section>
 
-      <section class="tab-panel" id="workoutPanel">
-        <form id="workoutForm" class="form-stack">
+      <section class="app-page" id="trainingPage" data-page="training">
+        <section class="plan-panel">
+          <div class="section-heading compact">
+            <div>
+              <p class="eyebrow">训练计划</p>
+              <h2>本周怎么练</h2>
+            </div>
+            <span id="planBadge">未生成</span>
+          </div>
+          <form id="planForm" class="form-stack">
+            <div class="inline-fields">
+              <label>
+                每周训练
+                <select id="planDays">
+                  <option value="3">3 天</option>
+                  <option value="4" selected>4 天</option>
+                  <option value="5">5 天</option>
+                </select>
+              </label>
+              <label>
+                训练目标
+                <select id="planGoal">
+                  <option value="muscle_gain">增肌</option>
+                  <option value="fat_loss">减脂</option>
+                  <option value="shape">塑形</option>
+                  <option value="strength">力量提升</option>
+                  <option value="recovery">恢复训练</option>
+                </select>
+              </label>
+            </div>
+            <div class="inline-fields">
+              <label>
+                训练水平
+                <select id="planLevel">
+                  <option value="beginner">新手</option>
+                  <option value="intermediate" selected>有基础</option>
+                  <option value="advanced">进阶</option>
+                </select>
+              </label>
+              <label>
+                器械条件
+                <select id="planEquipment">
+                  <option value="gym" selected>健身房</option>
+                  <option value="dumbbell">哑铃/弹力带</option>
+                  <option value="bodyweight">徒手</option>
+                </select>
+              </label>
+            </div>
+            <button class="primary-button" type="submit">生成训练计划</button>
+          </form>
+          <div class="plan-days" id="planSummary"></div>
+        </section>
+
+        <section class="overload-panel">
+          <div>
+            <p class="eyebrow">渐进超负荷</p>
+            <h2>下次怎么进步</h2>
+          </div>
+          <p id="overloadText">记录一个力量动作后，BOD 会根据上次表现给出加重量或加次数建议。</p>
+        </section>
+
+        <form id="workoutForm" class="form-stack training-log-form">
           <label>
             训练类型
             <select id="workoutType" required>
@@ -213,20 +251,52 @@
               </select>
             </label>
           </div>
+          <div class="inline-fields">
+            <label>
+              力量动作
+              <input id="exerciseName" type="text" maxlength="32" placeholder="例如：卧推 / 深蹲" />
+            </label>
+            <label>
+              重量 kg
+              <input id="exerciseWeight" type="number" min="0" max="500" step="0.5" placeholder="可选" />
+            </label>
+          </div>
+          <div class="inline-fields">
+            <label>
+              组数
+              <input id="exerciseSets" type="number" min="1" max="20" placeholder="可选" />
+            </label>
+            <label>
+              每组次数
+              <input id="exerciseReps" type="number" min="1" max="100" placeholder="可选" />
+            </label>
+          </div>
+          <label>
+            RPE / 力竭程度
+            <select id="exerciseRpe">
+              <option value="">未记录</option>
+              <option value="6">RPE 6：很轻松</option>
+              <option value="7">RPE 7：还剩 3 次左右</option>
+              <option value="8" selected>RPE 8：还剩 2 次左右</option>
+              <option value="9">RPE 9：接近力竭</option>
+              <option value="10">RPE 10：力竭</option>
+            </select>
+          </label>
           <label>
             备注
             <input id="workoutNote" type="text" maxlength="80" placeholder="例如：胸肩三头 / 跑步机坡度 6" />
           </label>
           <button class="primary-button" type="submit">保存训练</button>
         </form>
+
         <div class="section-heading">
-          <h2>今天练了什么</h2>
+          <h2>训练日志</h2>
           <span id="workoutCount">0 条</span>
         </div>
         <div class="list" id="workoutList"></div>
       </section>
 
-      <section class="tab-panel" id="bodyPanel">
+      <section class="app-page" id="progressPage" data-page="progress">
         <form id="weightForm" class="form-stack">
           <label>
             当前体重 kg
@@ -234,29 +304,26 @@
           </label>
           <button class="primary-button" type="submit">记录体重</button>
         </form>
-        <div class="section-heading">
-          <h2>最近体重</h2>
-          <span id="weightTrendLabel">暂无趋势</span>
-        </div>
-        <div class="list" id="weightList"></div>
-      </section>
 
-      <section class="tab-panel" id="waterPanel">
-        <div class="water-actions" aria-label="快捷喝水记录">
-          <button type="button" data-water="250">+250ml</button>
-          <button type="button" data-water="500">+500ml</button>
-          <button type="button" data-water="750">+750ml</button>
-        </div>
-        <form id="waterForm" class="form-stack">
-          <label>
-            自定义 ml
-            <input id="waterInput" type="number" min="50" max="3000" step="50" placeholder="例如 300" />
-          </label>
-          <button class="primary-button" type="submit">增加喝水量</button>
-        </form>
-      </section>
+        <section class="water-panel">
+          <div class="section-heading compact">
+            <h2>喝水</h2>
+            <span>今日累计</span>
+          </div>
+          <div class="water-actions" aria-label="快捷喝水记录">
+            <button type="button" data-water="250">+250ml</button>
+            <button type="button" data-water="500">+500ml</button>
+            <button type="button" data-water="750">+750ml</button>
+          </div>
+          <form id="waterForm" class="form-stack">
+            <label>
+              自定义 ml
+              <input id="waterInput" type="number" min="50" max="3000" step="50" placeholder="例如 300" />
+            </label>
+            <button class="primary-button" type="submit">增加喝水量</button>
+          </form>
+        </section>
 
-      <section class="tab-panel" id="trendPanel">
         <div class="section-heading">
           <h2>体重趋势</h2>
           <div class="segmented" role="group" aria-label="趋势范围">
@@ -265,13 +332,48 @@
           </div>
         </div>
         <canvas id="weightChart" width="680" height="320" aria-label="体重趋势图"></canvas>
+
         <div class="section-heading">
           <h2>热量趋势</h2>
           <span id="weekCalories">本周运动 0 kcal</span>
         </div>
         <div class="mini-bars" id="calorieBars"></div>
+
+        <div class="section-heading">
+          <h2>最近体重</h2>
+          <span id="weightTrendLabel">暂无趋势</span>
+        </div>
+        <div class="list" id="weightList"></div>
+      </section>
+
+      <section class="app-page" id="morePage" data-page="more">
+        <section class="launch-strip" aria-label="分享和反馈">
+          <p>数据保存在本设备，适合先记录训练、饮食和体重趋势。</p>
+          <div>
+            <button type="button" id="shareButton">分享</button>
+            <a id="feedbackLink" href="mailto:BOD8808@163.com?subject=BOD%20%E5%81%A5%E8%BA%AB%E8%AE%B0%E5%BD%95%E5%8F%8D%E9%A6%88">反馈</a>
+            <button type="button" id="copyEmailButton">复制邮箱</button>
+          </div>
+        </section>
+
+        <section class="install-guide" id="installGuide" aria-labelledby="installTitle">
+          <div>
+            <p class="eyebrow" id="installPlatform">安装到桌面</p>
+            <h2 id="installTitle">把 BOD 添加到手机桌面</h2>
+            <p id="installText">打开浏览器菜单，选择添加到主屏幕。</p>
+          </div>
+          <ol id="installSteps"></ol>
+        </section>
       </section>
     </main>
+
+    <nav class="bottom-nav" aria-label="主导航">
+      <button class="active" type="button" data-page-target="home">首页</button>
+      <button type="button" data-page-target="diet">饮食</button>
+      <button type="button" data-page-target="training">训练</button>
+      <button type="button" data-page-target="progress">进度</button>
+      <button type="button" data-page-target="more">更多</button>
+    </nav>
 
     <dialog id="settingsDialog">
       <form method="dialog" class="settings-card" id="profileForm">
@@ -305,7 +407,7 @@
 
     <div class="toast" id="achievementToast" role="status" aria-live="polite"></div>
 
-    <script src="./app.js?v=20260627-install-guide"></script>
+    <script src="./app.js?v=20260627-smart-training"></script>
     <script>
       if ("serviceWorker" in navigator) {
         window.addEventListener("load", () => {

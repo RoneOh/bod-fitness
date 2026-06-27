@@ -69,6 +69,7 @@
     weights: [],
     water: {},
     meals: [],
+    trainingPlan: null,
     achievements: {},
   };
 
@@ -144,6 +145,19 @@
     weightChart: document.getElementById("weightChart"),
     weekCalories: document.getElementById("weekCalories"),
     calorieBars: document.getElementById("calorieBars"),
+    planForm: document.getElementById("planForm"),
+    planDays: document.getElementById("planDays"),
+    planGoal: document.getElementById("planGoal"),
+    planLevel: document.getElementById("planLevel"),
+    planEquipment: document.getElementById("planEquipment"),
+    planBadge: document.getElementById("planBadge"),
+    planSummary: document.getElementById("planSummary"),
+    overloadText: document.getElementById("overloadText"),
+    exerciseName: document.getElementById("exerciseName"),
+    exerciseWeight: document.getElementById("exerciseWeight"),
+    exerciseSets: document.getElementById("exerciseSets"),
+    exerciseReps: document.getElementById("exerciseReps"),
+    exerciseRpe: document.getElementById("exerciseRpe"),
   };
 
   function loadState() {
@@ -158,6 +172,7 @@
         workouts: Array.isArray(saved.workouts) ? saved.workouts : [],
         weights: Array.isArray(saved.weights) ? saved.weights : [],
         meals: Array.isArray(saved.meals) ? saved.meals : [],
+        trainingPlan: saved.trainingPlan || null,
         water: saved.water && typeof saved.water === "object" ? saved.water : {},
         achievements: saved.achievements && typeof saved.achievements === "object" ? saved.achievements : {},
       };
@@ -530,11 +545,14 @@
         const type = workoutTypes[item.type]?.label || "训练";
         const intensity = intensityMultiplier[item.intensity]?.label || "中等";
         const note = item.note ? ` · ${escapeHtml(item.note)}` : "";
+        const exercise = item.exercise?.name
+          ? ` · ${escapeHtml(item.exercise.name)} ${item.exercise.weight || "-"}kg ${item.exercise.sets || "-"}x${item.exercise.reps || "-"}${item.exercise.rpe ? ` · RPE ${item.exercise.rpe}` : ""}`
+          : "";
         return `
           <article class="list-item">
             <div>
               <strong>${type}</strong>
-              <small>${item.minutes} 分钟 · ${intensity}${note}</small>
+              <small>${item.minutes} 分钟 · ${intensity}${exercise}${note}</small>
             </div>
             <b>${item.calories} kcal</b>
           </article>
@@ -659,11 +677,113 @@
       .join("");
   }
 
+  function buildTrainingPlan(days, goal, level, equipment) {
+    const goalTemplates = {
+      muscle_gain: ["推：胸肩三头", "拉：背部二头", "腿臀主练", "上肢容量", "全身补弱"],
+      fat_loss: ["全身力量循环", "中低强度有氧", "上肢力量+核心", "下肢力量+间歇", "低强度恢复"],
+      shape: ["臀腿塑形", "背肩体态", "全身线条", "核心+有氧", "薄弱部位补充"],
+      strength: ["深蹲/腿部主项", "卧推/推举主项", "硬拉/后链主项", "上肢辅助", "技术巩固"],
+      recovery: ["全身活动度", "低强度力量", "轻有氧", "核心稳定", "拉伸恢复"],
+    };
+    const levelMeta = {
+      beginner: { volume: "2-3 个动作，每个 2-3 组", effort: "RPE 6-7，先稳定动作质量" },
+      intermediate: { volume: "3-5 个动作，每个 3-4 组", effort: "RPE 7-8，主项保留 1-3 次余力" },
+      advanced: { volume: "4-6 个动作，主项 4-5 组", effort: "RPE 8-9，安排一个较重主项" },
+    };
+    const equipmentMeta = {
+      gym: "优先杠铃、器械和绳索，主项后接辅助动作。",
+      dumbbell: "用哑铃、弹力带和单侧动作替代器械。",
+      bodyweight: "以徒手、慢速离心、停顿和高次数提高刺激。",
+    };
+    const titles = goalTemplates[goal] || goalTemplates.muscle_gain;
+    const meta = levelMeta[level] || levelMeta.intermediate;
+    const equipmentNote = equipmentMeta[equipment] || equipmentMeta.gym;
+    return titles.slice(0, Number(days)).map((title, index) => ({
+      day: `第 ${index + 1} 天`,
+      title,
+      detail: `${meta.volume}；${meta.effort}。${equipmentNote}`,
+    }));
+  }
+
+  function renderTrainingPlan() {
+    const plan = state.trainingPlan;
+    if (!plan) {
+      els.planBadge.textContent = "未生成";
+      els.planSummary.innerHTML = '<div class="empty-state">选择目标、水平、每周次数和器械条件后生成计划。</div>';
+      return;
+    }
+
+    els.planBadge.textContent = `${plan.days} 天 · ${plan.goalLabel || plan.focusLabel || "训练"}`;
+    els.planSummary.innerHTML = plan.items
+      .map(
+        (item) => `
+          <article class="plan-day">
+            <strong>${item.day} · ${item.title}</strong>
+            <small>${item.detail}</small>
+          </article>
+        `,
+      )
+      .join("");
+  }
+
+  function exerciseLogs() {
+    return state.workouts
+      .filter((item) => item.exercise?.name && item.exercise?.weight && item.exercise?.reps)
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }
+
+  function renderOverload() {
+    const logs = exerciseLogs();
+    if (!logs.length) {
+      els.overloadText.textContent = "记录动作、重量、次数和 RPE 后，BOD 会判断下次该加重量、加次数、维持还是降负荷。";
+      return;
+    }
+
+    const latest = logs[0];
+    const sameExercise = logs.filter((item) => item.exercise.name === latest.exercise.name);
+    const current = latest.exercise;
+    const currentRpe = Number(current.rpe || 0);
+    if (sameExercise.length < 2) {
+      const firstAdvice =
+        currentRpe >= 9
+          ? "这次已经接近力竭，下次先维持重量，把动作质量和次数稳定住。"
+          : "下次先尝试同重量多 1-2 次，稳定后再加重量。";
+      els.overloadText.textContent = `${current.name} 已记录 ${current.weight}kg × ${current.sets || "-"} 组 × ${current.reps} 次，RPE ${currentRpe || "未记录"}。${firstAdvice}`;
+      return;
+    }
+
+    const previous = sameExercise[1].exercise;
+    const previousRpe = Number(previous.rpe || 0);
+    const repsUp = Number(current.reps) >= Number(previous.reps) + 2;
+    const weightUp = Number(current.weight) > Number(previous.weight);
+    const performanceDown = Number(current.reps) + 2 <= Number(previous.reps) && Number(current.weight) <= Number(previous.weight);
+
+    if (currentRpe >= 10 || (performanceDown && currentRpe >= 9)) {
+      els.overloadText.textContent = `${current.name} 这次压力偏高。下次建议降负荷 5-10%，或减少 1 组，把 RPE 控制在 7-8。`;
+      return;
+    }
+
+    if ((repsUp || weightUp) && currentRpe <= 8) {
+      els.overloadText.textContent = `${current.name} 有稳定进步。下次可以加 ${current.weight < 40 ? "1-2.5kg" : "2.5-5kg"}，或保持重量把每组次数再提高 1 次。`;
+      return;
+    }
+
+    if ((repsUp || weightUp) && currentRpe >= 9) {
+      els.overloadText.textContent = `${current.name} 虽然进步了，但已经接近力竭。下次先维持 ${current.weight}kg，目标把 RPE 从 ${currentRpe} 降到 8 左右。`;
+      return;
+    }
+
+    const rpeHint = previousRpe && currentRpe ? `上次 RPE ${previousRpe}，这次 RPE ${currentRpe}。` : "";
+    els.overloadText.textContent = `${current.name} 最近表现接近上次。${rpeHint}下次先保持 ${current.weight}kg，目标每组多做 1 次或让动作更稳。`;
+  }
+
   function render() {
     renderSummary();
     renderAchievements();
     renderFoodPicker();
     renderMealList();
+    renderTrainingPlan();
+    renderOverload();
     renderWorkoutList();
     renderWeightList();
     renderWeightChart();
@@ -757,6 +877,18 @@
     });
   });
 
+  document.querySelectorAll("[data-page-target]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const page = button.dataset.pageTarget;
+      document.querySelectorAll("[data-page-target]").forEach((item) => item.classList.remove("active"));
+      document.querySelectorAll(".app-page").forEach((item) => item.classList.remove("active"));
+      button.classList.add("active");
+      document.querySelector(`[data-page="${page}"]`)?.classList.add("active");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      if (page === "progress") renderWeightChart();
+    });
+  });
+
   els.foodCategories.addEventListener("click", (event) => {
     const button = event.target.closest("[data-food-category]");
     if (!button) return;
@@ -805,12 +937,47 @@
     render();
   });
 
+  els.planForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const days = Number(els.planDays.value);
+    const goal = els.planGoal.value;
+    const level = els.planLevel.value;
+    const equipment = els.planEquipment.value;
+    const goalLabel = els.planGoal.selectedOptions[0]?.textContent || "增肌";
+    const levelLabel = els.planLevel.selectedOptions[0]?.textContent || "有基础";
+    const equipmentLabel = els.planEquipment.selectedOptions[0]?.textContent || "健身房";
+    state.trainingPlan = {
+      days,
+      goal,
+      goalLabel,
+      level,
+      levelLabel,
+      equipment,
+      equipmentLabel,
+      items: buildTrainingPlan(days, goal, level, equipment),
+      updatedAt: new Date().toISOString(),
+    };
+    saveState();
+    renderTrainingPlan();
+    showToast("训练计划已生成");
+  });
+
   els.workoutForm.addEventListener("submit", (event) => {
     event.preventDefault();
     const type = els.workoutType.value;
     const minutes = Number(els.workoutMinutes.value);
     const intensity = els.workoutIntensity.value;
     const calories = estimateWorkoutCalories(type, minutes, intensity, currentWeight());
+    const exerciseName = els.exerciseName.value.trim();
+    const exercise = exerciseName
+      ? {
+          name: exerciseName,
+          weight: Number(els.exerciseWeight.value) || 0,
+          sets: Number(els.exerciseSets.value) || 0,
+          reps: Number(els.exerciseReps.value) || 0,
+          rpe: Number(els.exerciseRpe.value) || 0,
+        }
+      : null;
 
     state.workouts.push({
       id: makeId(),
@@ -819,11 +986,17 @@
       minutes,
       intensity,
       note: els.workoutNote.value.trim(),
+      exercise,
       calories,
       createdAt: new Date().toISOString(),
     });
 
     els.workoutNote.value = "";
+    els.exerciseName.value = "";
+    els.exerciseWeight.value = "";
+    els.exerciseSets.value = "";
+    els.exerciseReps.value = "";
+    els.exerciseRpe.value = "";
     saveState();
     updateAchievements();
     render();
