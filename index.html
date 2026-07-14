@@ -7,7 +7,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="BOD" />
     <title>BOD 健身记录</title>
-    <link rel="stylesheet" href="./styles.css?v=20260627-smart-training" />
+    <link rel="stylesheet" href="./styles.css?v=20260714-training-session" />
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="apple-touch-icon" href="./icons/icon-192.svg" />
   </head>
@@ -101,12 +101,17 @@
             <p id="dietReason">根据当前资料估算。</p>
           </div>
           <div class="macro-row">
-            <span>蛋白质建议</span>
-            <strong id="proteinTarget">0g</strong>
+            <span>今日蛋白质</span>
+            <strong id="proteinProgress">0 / 0g</strong>
+            <div class="macro-progress"><span id="proteinProgressBar"></span></div>
           </div>
         </section>
 
         <form id="mealForm" class="form-stack">
+          <label>
+            记录日期
+            <input id="mealDate" type="date" required />
+          </label>
           <div class="food-picker">
             <div class="section-heading compact">
               <h2>选一个常见食物</h2>
@@ -157,151 +162,135 @@
         </form>
 
         <div class="section-heading">
-          <h2>今天吃了什么</h2>
+          <h2>最近饮食</h2>
           <span id="mealCount">0 条</span>
         </div>
         <div class="list" id="mealList"></div>
       </section>
 
       <section class="app-page" id="trainingPage" data-page="training">
-        <section class="plan-panel">
-          <div class="section-heading compact">
-            <div>
-              <p class="eyebrow">训练计划</p>
-              <h2>本周怎么练</h2>
-            </div>
-            <span id="planBadge">未生成</span>
-          </div>
-          <form id="planForm" class="form-stack">
-            <div class="inline-fields">
-              <label>
-                每周训练
-                <select id="planDays">
-                  <option value="3">3 天</option>
-                  <option value="4" selected>4 天</option>
-                  <option value="5">5 天</option>
-                </select>
-              </label>
-              <label>
-                训练目标
-                <select id="planGoal">
-                  <option value="muscle_gain">增肌</option>
-                  <option value="fat_loss">减脂</option>
-                  <option value="shape">塑形</option>
-                  <option value="strength">力量提升</option>
-                  <option value="recovery">恢复训练</option>
-                </select>
-              </label>
-            </div>
-            <div class="inline-fields">
-              <label>
-                训练水平
-                <select id="planLevel">
-                  <option value="beginner">新手</option>
-                  <option value="intermediate" selected>有基础</option>
-                  <option value="advanced">进阶</option>
-                </select>
-              </label>
-              <label>
-                器械条件
-                <select id="planEquipment">
-                  <option value="gym" selected>健身房</option>
-                  <option value="dumbbell">哑铃/弹力带</option>
-                  <option value="bodyweight">徒手</option>
-                </select>
-              </label>
-            </div>
-            <button class="primary-button" type="submit">生成训练计划</button>
-          </form>
-          <div class="plan-days" id="planSummary"></div>
-        </section>
-
-        <section class="overload-panel">
-          <div>
-            <p class="eyebrow">渐进超负荷</p>
-            <h2>下次怎么进步</h2>
-          </div>
-          <p id="overloadText">记录一个力量动作后，BOD 会根据上次表现给出加重量或加次数建议。</p>
-        </section>
-
-        <form id="workoutForm" class="form-stack training-log-form">
-          <label>
-            训练类型
-            <select id="workoutType" required>
-              <option value="strength">力量训练</option>
-              <option value="cardio">有氧训练</option>
-              <option value="hiit">HIIT</option>
-              <option value="yoga">瑜伽/拉伸</option>
-              <option value="walk">快走</option>
-              <option value="run">跑步</option>
-              <option value="cycling">骑行</option>
-            </select>
-          </label>
-          <div class="inline-fields">
-            <label>
-              时长
-              <input id="workoutMinutes" type="number" min="1" max="360" value="45" required />
-            </label>
-            <label>
-              强度
-              <select id="workoutIntensity">
-                <option value="light">轻松</option>
-                <option value="moderate" selected>中等</option>
-                <option value="hard">较高</option>
-              </select>
-            </label>
-          </div>
-          <div class="inline-fields">
-            <label>
-              力量动作
-              <input id="exerciseName" type="text" maxlength="32" placeholder="例如：卧推 / 深蹲" />
-            </label>
-            <label>
-              重量 kg
-              <input id="exerciseWeight" type="number" min="0" max="500" step="0.5" placeholder="可选" />
-            </label>
-          </div>
-          <div class="inline-fields">
-            <label>
-              组数
-              <input id="exerciseSets" type="number" min="1" max="20" placeholder="可选" />
-            </label>
-            <label>
-              每组次数
-              <input id="exerciseReps" type="number" min="1" max="100" placeholder="可选" />
-            </label>
-          </div>
-          <label>
-            RPE / 力竭程度
-            <select id="exerciseRpe">
-              <option value="">未记录</option>
-              <option value="6">RPE 6：很轻松</option>
-              <option value="7">RPE 7：还剩 3 次左右</option>
-              <option value="8" selected>RPE 8：还剩 2 次左右</option>
-              <option value="9">RPE 9：接近力竭</option>
-              <option value="10">RPE 10：力竭</option>
-            </select>
-          </label>
-          <label>
-            备注
-            <input id="workoutNote" type="text" maxlength="80" placeholder="例如：胸肩三头 / 跑步机坡度 6" />
-          </label>
-          <button class="primary-button" type="submit">保存训练</button>
-        </form>
-
-        <div class="section-heading">
-          <h2>训练日志</h2>
-          <span id="workoutCount">0 条</span>
+        <div class="view-switch" role="tablist" aria-label="训练页面">
+          <button class="active" type="button" data-training-view="today">今日训练</button>
+          <button type="button" data-training-view="plan">训练计划</button>
+          <button type="button" data-training-view="history">历史表现</button>
         </div>
-        <div class="list" id="workoutList"></div>
+
+        <div class="training-view active" id="trainingTodayView" data-training-panel="today">
+          <section class="session-panel">
+            <div class="section-heading compact">
+              <div>
+                <p class="eyebrow">本次训练</p>
+                <h2>记录多个动作和组</h2>
+              </div>
+              <span id="sessionSetCount">0 组</span>
+            </div>
+            <form id="workoutForm" class="form-stack">
+              <div class="inline-fields">
+                <label>日期<input id="workoutDate" type="date" required /></label>
+                <label>
+                  类型
+                  <select id="workoutType" required>
+                    <option value="strength">力量训练</option>
+                    <option value="cardio">有氧训练</option>
+                    <option value="hiit">HIIT</option>
+                    <option value="yoga">瑜伽/拉伸</option>
+                    <option value="walk">快走</option>
+                    <option value="run">跑步</option>
+                    <option value="cycling">骑行</option>
+                  </select>
+                </label>
+              </div>
+              <div class="inline-fields">
+                <label>时长（分钟）<input id="workoutMinutes" type="number" min="1" max="360" value="45" required /></label>
+                <label>
+                  强度
+                  <select id="workoutIntensity">
+                    <option value="light">轻松</option>
+                    <option value="moderate" selected>中等</option>
+                    <option value="hard">较高</option>
+                  </select>
+                </label>
+              </div>
+              <label>备注<input id="workoutNote" type="text" maxlength="80" placeholder="例如：胸肩三头 / 跑步机坡度 6" /></label>
+            </form>
+
+            <form id="exerciseForm" class="exercise-entry form-stack">
+              <div class="inline-fields">
+                <label>动作<input id="exerciseName" type="text" maxlength="32" placeholder="例如：卧推" /></label>
+                <label>重量 kg<input id="exerciseWeight" type="number" min="0" max="500" step="0.5" placeholder="徒手可填 0" /></label>
+              </div>
+              <div class="set-fields">
+                <label>添加组数<input id="exerciseSets" type="number" min="1" max="10" value="3" /></label>
+                <label>每组次数<input id="exerciseReps" type="number" min="1" max="100" value="8" /></label>
+                <label>
+                  RPE
+                  <select id="exerciseRpe">
+                    <option value="6">6</option>
+                    <option value="7">7</option>
+                    <option value="8" selected>8</option>
+                    <option value="9">9</option>
+                    <option value="10">10</option>
+                  </select>
+                </label>
+              </div>
+              <button class="secondary-button" type="submit">添加到本次训练</button>
+            </form>
+            <div class="session-exercises" id="sessionExerciseList"></div>
+            <button class="primary-button" id="finishWorkoutButton" type="button">完成并保存训练</button>
+          </section>
+        </div>
+
+        <div class="training-view" id="trainingPlanView" data-training-panel="plan">
+          <section class="plan-panel">
+            <div class="section-heading compact">
+              <div><p class="eyebrow">智能计划</p><h2>本周怎么练</h2></div>
+              <span id="planBadge">未生成</span>
+            </div>
+            <form id="planForm" class="form-stack">
+              <div class="inline-fields">
+                <label>每周训练<select id="planDays"><option value="3">3 天</option><option value="4" selected>4 天</option><option value="5">5 天</option></select></label>
+                <label>训练目标<select id="planGoal"><option value="muscle_gain">增肌</option><option value="fat_loss">减脂</option><option value="shape">塑形</option><option value="strength">力量提升</option><option value="recovery">恢复训练</option></select></label>
+              </div>
+              <div class="inline-fields">
+                <label>训练水平<select id="planLevel"><option value="beginner">新手</option><option value="intermediate" selected>有基础</option><option value="advanced">进阶</option></select></label>
+                <label>器械条件<select id="planEquipment"><option value="gym" selected>健身房</option><option value="dumbbell">哑铃/弹力带</option><option value="bodyweight">徒手</option></select></label>
+              </div>
+              <button class="primary-button" type="submit">生成训练计划</button>
+            </form>
+            <div class="plan-days" id="planSummary"></div>
+          </section>
+        </div>
+
+        <div class="training-view" id="trainingHistoryView" data-training-panel="history">
+          <section class="overload-panel">
+            <div><p class="eyebrow">渐进超负荷</p><h2>下次怎么进步</h2></div>
+            <p id="overloadText">记录动作、组数、次数和 RPE 后，BOD 会给出下一次建议。</p>
+          </section>
+          <section class="exercise-panel">
+            <div class="section-heading compact">
+              <div><p class="eyebrow">动作库</p><h2>常练动作</h2></div>
+              <span id="exerciseHint">记录后会自动沉淀</span>
+            </div>
+            <div class="exercise-chips" id="exerciseLibrary"></div>
+          </section>
+          <section class="exercise-history-panel">
+            <div class="section-heading compact">
+              <div><p class="eyebrow">动作历史</p><h2 id="exerciseHistoryTitle">最近动作</h2></div>
+              <span id="exerciseHistorySummary">暂无记录</span>
+            </div>
+            <div class="list" id="exerciseHistoryList"></div>
+          </section>
+          <div class="section-heading"><h2>训练日志</h2><span id="workoutCount">0 条</span></div>
+          <div class="list" id="workoutList"></div>
+        </div>
       </section>
 
       <section class="app-page" id="progressPage" data-page="progress">
         <form id="weightForm" class="form-stack">
-          <label>
-            当前体重 kg
-            <input id="weightInput" type="number" min="20" max="300" step="0.1" placeholder="例如 72.5" required />
-          </label>
+          <div class="inline-fields">
+            <label>记录日期<input id="weightDate" type="date" required /></label>
+            <label>当前体重 kg<input id="weightInput" type="number" min="20" max="300" step="0.1" placeholder="例如 72.5" required /></label>
+          </div>
           <button class="primary-button" type="submit">记录体重</button>
         </form>
 
@@ -311,17 +300,27 @@
             <span>今日累计</span>
           </div>
           <div class="water-actions" aria-label="快捷喝水记录">
+            <button type="button" data-water="-250">-250ml</button>
             <button type="button" data-water="250">+250ml</button>
             <button type="button" data-water="500">+500ml</button>
             <button type="button" data-water="750">+750ml</button>
           </div>
           <form id="waterForm" class="form-stack">
-            <label>
-              自定义 ml
-              <input id="waterInput" type="number" min="50" max="3000" step="50" placeholder="例如 300" />
-            </label>
+            <div class="inline-fields">
+              <label>记录日期<input id="waterDate" type="date" required /></label>
+              <label>自定义 ml<input id="waterInput" type="number" min="50" max="5000" step="50" placeholder="例如 300" /></label>
+            </div>
             <button class="primary-button" type="submit">增加喝水量</button>
           </form>
+        </section>
+
+        <section class="weekly-panel">
+          <div class="section-heading compact">
+            <div><p class="eyebrow">最近 7 天</p><h2>每周总结</h2></div>
+            <span id="weeklyStreak">连续 0 天</span>
+          </div>
+          <div class="weekly-grid" id="weeklySummary"></div>
+          <p id="weeklyAdvice"></p>
         </section>
 
         <div class="section-heading">
@@ -401,13 +400,41 @@
             <option value="maintain">保持</option>
           </select>
         </label>
+        <label>
+          日常活动量
+          <select id="activityInput">
+            <option value="sedentary">久坐为主</option>
+            <option value="light">轻度活动</option>
+            <option value="moderate">每周运动 3-5 次</option>
+            <option value="high">高活动量</option>
+          </select>
+        </label>
+        <label>
+          目标速度
+          <select id="goalPaceInput">
+            <option value="gentle">温和</option>
+            <option value="steady">稳步</option>
+            <option value="fast">较快</option>
+          </select>
+        </label>
         <button class="primary-button" value="default" type="submit">开始记录</button>
+      </form>
+    </dialog>
+
+    <dialog id="recordDialog">
+      <form class="settings-card" id="recordEditForm">
+        <div class="section-heading compact">
+          <div><p class="eyebrow">修改记录</p><h2 id="recordDialogTitle">编辑</h2></div>
+          <button class="icon-button" id="recordDialogClose" type="button" aria-label="关闭" title="关闭">×</button>
+        </div>
+        <div class="form-stack" id="recordEditFields"></div>
+        <button class="primary-button" type="submit">保存修改</button>
       </form>
     </dialog>
 
     <div class="toast" id="achievementToast" role="status" aria-live="polite"></div>
 
-    <script src="./app.js?v=20260627-smart-training"></script>
+    <script src="./app.js?v=20260714-training-session"></script>
     <script>
       if ("serviceWorker" in navigator) {
         window.addEventListener("load", () => {

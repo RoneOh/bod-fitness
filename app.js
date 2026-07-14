@@ -35,6 +35,19 @@
     maintain: { label: "保持", trainTarget: 320, dietOffset: 0 },
   };
 
+  const activityFactors = {
+    sedentary: { label: "久坐为主", value: 1.25 },
+    light: { label: "轻度活动", value: 1.4 },
+    moderate: { label: "每周运动 3-5 次", value: 1.55 },
+    high: { label: "高活动量", value: 1.7 },
+  };
+
+  const goalPaceOffsets = {
+    fat_loss: { gentle: -250, steady: -400, fast: -550 },
+    muscle_gain: { gentle: 150, steady: 250, fast: 350 },
+    maintain: { gentle: 0, steady: 0, fast: 0 },
+  };
+
   const foodLibrary = [
     { id: "chicken_rice", category: "外卖", name: "鸡胸饭", calories: 650, protein: 42 },
     { id: "beef_rice", category: "外卖", name: "牛肉饭", calories: 720, protein: 36 },
@@ -59,10 +72,13 @@
   const foodCategories = ["外卖", "蛋白质", "主食", "饮品", "加餐"];
 
   const defaultState = {
+    schemaVersion: 2,
     profile: {
       height: 175,
       currentWeight: 70,
       goal: "fat_loss",
+      activityLevel: "light",
+      goalPace: "steady",
       onboarded: false,
     },
     workouts: [],
@@ -70,6 +86,7 @@
     water: {},
     meals: [],
     trainingPlan: null,
+    activeWorkout: null,
     achievements: {},
   };
 
@@ -80,6 +97,8 @@
   let selectedCategory = "外卖";
   let selectedFoodId = "chicken_rice";
   let selectedPortion = 1;
+  let activeExerciseName = "";
+  let editingRecord = null;
 
   const els = {
     goalButtonLabel: document.getElementById("goalButtonLabel"),
@@ -94,7 +113,8 @@
     dietTarget: document.getElementById("dietTarget"),
     dietTargetLarge: document.getElementById("dietTargetLarge"),
     dietReason: document.getElementById("dietReason"),
-    proteinTarget: document.getElementById("proteinTarget"),
+    proteinProgress: document.getElementById("proteinProgress"),
+    proteinProgressBar: document.getElementById("proteinProgressBar"),
     latestWeight: document.getElementById("latestWeight"),
     recommendationText: document.getElementById("recommendationText"),
     achievementGrid: document.getElementById("achievementGrid"),
@@ -115,12 +135,14 @@
     estimatedCalories: document.getElementById("estimatedCalories"),
     estimatedProtein: document.getElementById("estimatedProtein"),
     mealForm: document.getElementById("mealForm"),
+    mealDate: document.getElementById("mealDate"),
     mealName: document.getElementById("mealName"),
     mealCalories: document.getElementById("mealCalories"),
     mealProtein: document.getElementById("mealProtein"),
     mealCount: document.getElementById("mealCount"),
     mealList: document.getElementById("mealList"),
     workoutForm: document.getElementById("workoutForm"),
+    workoutDate: document.getElementById("workoutDate"),
     workoutType: document.getElementById("workoutType"),
     workoutMinutes: document.getElementById("workoutMinutes"),
     workoutIntensity: document.getElementById("workoutIntensity"),
@@ -128,10 +150,12 @@
     workoutCount: document.getElementById("workoutCount"),
     workoutList: document.getElementById("workoutList"),
     weightForm: document.getElementById("weightForm"),
+    weightDate: document.getElementById("weightDate"),
     weightInput: document.getElementById("weightInput"),
     weightList: document.getElementById("weightList"),
     weightTrendLabel: document.getElementById("weightTrendLabel"),
     waterForm: document.getElementById("waterForm"),
+    waterDate: document.getElementById("waterDate"),
     waterInput: document.getElementById("waterInput"),
     settingsButton: document.getElementById("settingsButton"),
     settingsDialog: document.getElementById("settingsDialog"),
@@ -142,6 +166,8 @@
     heightInput: document.getElementById("heightInput"),
     profileWeightInput: document.getElementById("profileWeightInput"),
     goalInput: document.getElementById("goalInput"),
+    activityInput: document.getElementById("activityInput"),
+    goalPaceInput: document.getElementById("goalPaceInput"),
     weightChart: document.getElementById("weightChart"),
     weekCalories: document.getElementById("weekCalories"),
     calorieBars: document.getElementById("calorieBars"),
@@ -153,11 +179,28 @@
     planBadge: document.getElementById("planBadge"),
     planSummary: document.getElementById("planSummary"),
     overloadText: document.getElementById("overloadText"),
+    exerciseLibrary: document.getElementById("exerciseLibrary"),
+    exerciseHint: document.getElementById("exerciseHint"),
+    exerciseHistoryTitle: document.getElementById("exerciseHistoryTitle"),
+    exerciseHistorySummary: document.getElementById("exerciseHistorySummary"),
+    exerciseHistoryList: document.getElementById("exerciseHistoryList"),
     exerciseName: document.getElementById("exerciseName"),
     exerciseWeight: document.getElementById("exerciseWeight"),
     exerciseSets: document.getElementById("exerciseSets"),
     exerciseReps: document.getElementById("exerciseReps"),
     exerciseRpe: document.getElementById("exerciseRpe"),
+    exerciseForm: document.getElementById("exerciseForm"),
+    sessionExerciseList: document.getElementById("sessionExerciseList"),
+    sessionSetCount: document.getElementById("sessionSetCount"),
+    finishWorkoutButton: document.getElementById("finishWorkoutButton"),
+    weeklySummary: document.getElementById("weeklySummary"),
+    weeklyStreak: document.getElementById("weeklyStreak"),
+    weeklyAdvice: document.getElementById("weeklyAdvice"),
+    recordDialog: document.getElementById("recordDialog"),
+    recordEditForm: document.getElementById("recordEditForm"),
+    recordEditFields: document.getElementById("recordEditFields"),
+    recordDialogTitle: document.getElementById("recordDialogTitle"),
+    recordDialogClose: document.getElementById("recordDialogClose"),
   };
 
   function loadState() {
@@ -173,6 +216,7 @@
         weights: Array.isArray(saved.weights) ? saved.weights : [],
         meals: Array.isArray(saved.meals) ? saved.meals : [],
         trainingPlan: saved.trainingPlan || null,
+        activeWorkout: saved.activeWorkout && typeof saved.activeWorkout === "object" ? saved.activeWorkout : null,
         water: saved.water && typeof saved.water === "object" ? saved.water : {},
         achievements: saved.achievements && typeof saved.achievements === "object" ? saved.achievements : {},
       };
@@ -201,8 +245,16 @@
     return state.meals.filter((item) => item.date === todayKey());
   }
 
+  function compareRecordsAsc(a, b) {
+    return a.date.localeCompare(b.date) || String(a.createdAt || "").localeCompare(String(b.createdAt || ""));
+  }
+
+  function compareRecordsDesc(a, b) {
+    return compareRecordsAsc(b, a);
+  }
+
   function latestWeightRecord() {
-    return [...state.weights].sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
+    return [...state.weights].sort(compareRecordsDesc)[0];
   }
 
   function todayWorkoutCalories() {
@@ -290,67 +342,88 @@
     const cutoff = dateOffset(days - 1);
     return state.weights
       .filter((item) => item.date >= cutoff)
-      .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+      .sort(compareRecordsAsc);
   }
 
-  function weeklyWeightChange() {
-    const trend = getWeightTrend(14);
-    if (trend.length < 2) return 0;
-    const first = trend[0];
-    const last = trend[trend.length - 1];
-    const days = Math.max(1, (new Date(last.createdAt) - new Date(first.createdAt)) / 86400000);
-    return ((Number(last.value) - Number(first.value)) / days) * 7;
+  function dailyWeightAverages(days = 14) {
+    const cutoff = dateOffset(days - 1);
+    const grouped = new Map();
+    state.weights
+      .filter((item) => item.date >= cutoff)
+      .forEach((item) => {
+        const values = grouped.get(item.date) || [];
+        values.push(Number(item.value));
+        grouped.set(item.date, values);
+      });
+    return [...grouped.entries()]
+      .map(([date, values]) => ({ date, value: values.reduce((sum, value) => sum + value, 0) / values.length }))
+      .sort((a, b) => a.date.localeCompare(b.date));
+  }
+
+  function adaptiveWeightChange() {
+    const daily = dailyWeightAverages(14);
+    const recentCutoff = dateOffset(6);
+    const previousCutoff = dateOffset(13);
+    const recent = daily.filter((item) => item.date >= recentCutoff);
+    const previous = daily.filter((item) => item.date >= previousCutoff && item.date < recentCutoff);
+    if (daily.length < 10 || recent.length < 4 || previous.length < 4) {
+      return { ready: false, change: 0, recordedDays: daily.length };
+    }
+    const average = (items) => items.reduce((sum, item) => sum + item.value, 0) / items.length;
+    return { ready: true, change: average(recent) - average(previous), recordedDays: daily.length };
   }
 
   function dietPlan() {
     const weight = currentWeight();
     const height = Number(state.profile.height) || 175;
-    const maintenance = Math.round((weight * 22 + height * 3) / 10) * 10;
+    const activity = activityFactors[state.profile.activityLevel] || activityFactors.light;
+    const estimatedBmr = 10 * weight + 6.25 * height - 228;
+    const maintenance = Math.round((estimatedBmr * activity.value) / 10) * 10;
     const goal = state.profile.goal;
-    const change = weeklyWeightChange();
+    const trend = adaptiveWeightChange();
+    const change = trend.change;
+    const pace = state.profile.goalPace || "steady";
+    const goalOffset = goalPaceOffsets[goal]?.[pace] ?? goalInfo().dietOffset;
     let adjustment = 0;
-    let reason = "根据身高、体重和当前目标估算。";
+    let reason = `按${activity.label}和${goalInfo().label}目标估算。继续记录体重，满 10 个有效记录日后自动校准。`;
 
     if (goal === "fat_loss") {
-      reason = "减脂目标：以维持热量为基础，先制造温和热量缺口。";
-      if (change > -0.15) {
+      if (trend.ready && change > -0.15) {
         adjustment = -100;
-        reason = "最近体重下降不明显，今日摄入目标小幅下调 100 kcal。";
-      } else if (change < -0.9) {
+        reason = "两个 7 日体重均值下降不明显，摄入目标下调 100 kcal。";
+      } else if (trend.ready && change < -0.9) {
         adjustment = 100;
-        reason = "最近体重下降偏快，今日摄入目标小幅上调 100 kcal，优先保护状态。";
+        reason = "两个 7 日体重均值下降偏快，摄入目标上调 100 kcal。";
       }
     }
 
     if (goal === "muscle_gain") {
-      reason = "增肌目标：在维持热量上增加小幅盈余。";
-      if (change < 0.1) {
+      if (trend.ready && change < 0.1) {
         adjustment = 100;
-        reason = "最近体重增长不明显，今日摄入目标小幅上调 100 kcal。";
-      } else if (change > 0.6) {
+        reason = "两个 7 日体重均值增长不明显，摄入目标上调 100 kcal。";
+      } else if (trend.ready && change > 0.6) {
         adjustment = -100;
-        reason = "最近体重增长偏快，今日摄入目标小幅下调 100 kcal。";
+        reason = "两个 7 日体重均值增长偏快，摄入目标下调 100 kcal。";
       }
     }
 
     if (goal === "maintain") {
-      reason = "保持目标：围绕维持热量，让体重趋势更平稳。";
-      if (change > 0.35) {
+      if (trend.ready && change > 0.35) {
         adjustment = -100;
-        reason = "最近体重略上行，今日摄入目标小幅下调 100 kcal。";
-      } else if (change < -0.35) {
+        reason = "两个 7 日体重均值略有上行，摄入目标下调 100 kcal。";
+      } else if (trend.ready && change < -0.35) {
         adjustment = 100;
-        reason = "最近体重略下行，今日摄入目标小幅上调 100 kcal。";
+        reason = "两个 7 日体重均值略有下行，摄入目标上调 100 kcal。";
       }
     }
 
-    const target = Math.max(1300, Math.min(4500, maintenance + goalInfo().dietOffset + adjustment));
+    if (trend.ready && adjustment === 0) reason = "两个 7 日体重均值符合目标速度，本周热量保持不变。";
+    const target = Math.max(1300, Math.min(4500, maintenance + goalOffset + adjustment));
     const protein = Math.round(weight * (goal === "muscle_gain" ? 1.8 : 1.6));
-    return { target, maintenance, adjustment, reason, protein };
+    return { target, maintenance, adjustment, reason, protein, trend };
   }
 
-  function addWater(amount) {
-    const key = todayKey();
+  function addWater(amount, key = todayKey()) {
     state.water[key] = Math.max(0, Number(state.water[key] || 0) + amount);
     saveState();
     render();
@@ -437,7 +510,9 @@
     els.dietTarget.textContent = diet.target;
     els.dietTargetLarge.textContent = diet.target;
     els.dietReason.textContent = diet.reason;
-    els.proteinTarget.textContent = `${diet.protein}g`;
+    const protein = todayProtein();
+    els.proteinProgress.textContent = `${protein} / ${diet.protein}g`;
+    els.proteinProgressBar.style.width = `${Math.min(100, Math.round((protein / diet.protein) * 100))}%`;
     els.goalPercent.textContent = `${percent}%`;
     els.goalRemain.textContent = remain > 0 ? `还差 ${remain} kcal` : `超出 ${Math.abs(remain)} kcal`;
     els.goalRing.style.strokeDasharray = `${circumference}`;
@@ -474,8 +549,8 @@
   }
 
   function renderMealList() {
-    const meals = todayMeals().sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-    els.mealCount.textContent = `${meals.length} 条`;
+    const meals = [...state.meals].sort(compareRecordsDesc).slice(0, 8);
+    els.mealCount.textContent = `最近 ${meals.length} 条`;
     if (!meals.length) {
       els.mealList.innerHTML = '<div class="empty-state">还没有饮食记录</div>';
       return;
@@ -490,7 +565,7 @@
               <strong>${escapeHtml(item.name)}</strong>
               <small>${item.date}${protein}</small>
             </div>
-            <b>${item.calories} kcal</b>
+            <div class="record-side"><b>${item.calories} kcal</b>${recordActions("meal", item.id)}</div>
           </article>
         `;
       })
@@ -533,8 +608,8 @@
   }
 
   function renderWorkoutList() {
-    const workouts = todayWorkouts().sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-    els.workoutCount.textContent = `${workouts.length} 条`;
+    const workouts = [...state.workouts].sort(compareRecordsDesc).slice(0, 10);
+    els.workoutCount.textContent = `最近 ${workouts.length} 条`;
     if (!workouts.length) {
       els.workoutList.innerHTML = '<div class="empty-state">还没有训练记录</div>';
       return;
@@ -545,8 +620,9 @@
         const type = workoutTypes[item.type]?.label || "训练";
         const intensity = intensityMultiplier[item.intensity]?.label || "中等";
         const note = item.note ? ` · ${escapeHtml(item.note)}` : "";
-        const exercise = item.exercise?.name
-          ? ` · ${escapeHtml(item.exercise.name)} ${item.exercise.weight || "-"}kg ${item.exercise.sets || "-"}x${item.exercise.reps || "-"}${item.exercise.rpe ? ` · RPE ${item.exercise.rpe}` : ""}`
+        const exercises = workoutExercises(item);
+        const exercise = exercises.length
+          ? ` · ${exercises.map((entry) => `${escapeHtml(entry.name)} ${entry.sets.length}组`).join(" / ")}`
           : "";
         return `
           <article class="list-item">
@@ -554,7 +630,7 @@
               <strong>${type}</strong>
               <small>${item.minutes} 分钟 · ${intensity}${exercise}${note}</small>
             </div>
-            <b>${item.calories} kcal</b>
+            <div class="record-side"><b>${item.calories} kcal</b>${recordActions("workout", item.id)}</div>
           </article>
         `;
       })
@@ -562,7 +638,7 @@
   }
 
   function renderWeightList() {
-    const weights = [...state.weights].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 8);
+    const weights = [...state.weights].sort(compareRecordsDesc).slice(0, 8);
     if (!weights.length) {
       els.weightList.innerHTML = '<div class="empty-state">记录一次体重后，这里会显示最近变化</div>';
       els.weightTrendLabel.textContent = "暂无趋势";
@@ -581,7 +657,7 @@
               <strong>${Number(item.value).toFixed(1)} kg</strong>
               <small>${item.date}</small>
             </div>
-            <b>体重</b>
+            <div class="record-side"><b>体重</b>${recordActions("weight", item.id)}</div>
           </article>
         `,
       )
@@ -678,30 +754,62 @@
   }
 
   function buildTrainingPlan(days, goal, level, equipment) {
-    const goalTemplates = {
-      muscle_gain: ["推：胸肩三头", "拉：背部二头", "腿臀主练", "上肢容量", "全身补弱"],
-      fat_loss: ["全身力量循环", "中低强度有氧", "上肢力量+核心", "下肢力量+间歇", "低强度恢复"],
-      shape: ["臀腿塑形", "背肩体态", "全身线条", "核心+有氧", "薄弱部位补充"],
-      strength: ["深蹲/腿部主项", "卧推/推举主项", "硬拉/后链主项", "上肢辅助", "技术巩固"],
-      recovery: ["全身活动度", "低强度力量", "轻有氧", "核心稳定", "拉伸恢复"],
+    const templates = {
+      muscle_gain: [
+        ["推：胸肩三头", ["卧推", "肩上推举", "上斜推举", "三头下压"]],
+        ["拉：背部二头", ["高位下拉", "杠铃划船", "坐姿划船", "二头弯举"]],
+        ["腿臀主练", ["深蹲", "罗马尼亚硬拉", "腿举", "提踵"]],
+        ["上肢容量", ["哑铃卧推", "单臂划船", "侧平举", "面拉"]],
+        ["全身补弱", ["硬拉", "保加利亚分腿蹲", "俯卧撑", "平板支撑"]],
+      ],
+      fat_loss: [
+        ["全身力量", ["深蹲", "卧推", "高位下拉", "平板支撑"]],
+        ["稳态有氧", ["快走", "骑行", "死虫"]],
+        ["上肢与核心", ["肩上推举", "坐姿划船", "俯卧撑", "卷腹"]],
+        ["下肢与间歇", ["罗马尼亚硬拉", "箭步蹲", "登山跑"]],
+        ["低强度恢复", ["快走", "臀桥", "拉伸"]],
+      ],
+      shape: [
+        ["臀腿塑形", ["臀推", "保加利亚分腿蹲", "罗马尼亚硬拉", "髋外展"]],
+        ["背肩体态", ["高位下拉", "坐姿划船", "侧平举", "面拉"]],
+        ["全身线条", ["高脚杯深蹲", "哑铃卧推", "单臂划船", "平板支撑"]],
+        ["核心与有氧", ["死虫", "卷腹", "登山跑", "快走"]],
+        ["薄弱部位", ["臀桥", "俯卧撑", "侧平举", "提踵"]],
+      ],
+      strength: [
+        ["深蹲主项", ["深蹲", "暂停深蹲", "腿举", "平板支撑"]],
+        ["卧推动作", ["卧推", "窄距卧推", "杠铃划船", "三头下压"]],
+        ["硬拉主项", ["硬拉", "罗马尼亚硬拉", "高位下拉", "臀桥"]],
+        ["推举与上肢", ["肩上推举", "引体向上", "哑铃卧推", "面拉"]],
+        ["技术巩固", ["深蹲", "卧推", "硬拉"]],
+      ],
+      recovery: [
+        ["全身活动", ["高脚杯深蹲", "俯卧撑", "弹力带划船"]],
+        ["低强度力量", ["臀桥", "分腿蹲", "死虫"]],
+        ["轻有氧", ["快走", "骑行", "拉伸"]],
+        ["核心稳定", ["鸟狗", "侧桥", "平板支撑"]],
+        ["拉伸恢复", ["快走", "拉伸", "呼吸练习"]],
+      ],
     };
-    const levelMeta = {
-      beginner: { volume: "2-3 个动作，每个 2-3 组", effort: "RPE 6-7，先稳定动作质量" },
-      intermediate: { volume: "3-5 个动作，每个 3-4 组", effort: "RPE 7-8，主项保留 1-3 次余力" },
-      advanced: { volume: "4-6 个动作，主项 4-5 组", effort: "RPE 8-9，安排一个较重主项" },
+    const replacements = {
+      dumbbell: { 卧推: "哑铃卧推", 杠铃划船: "单臂哑铃划船", 高位下拉: "弹力带下拉", 腿举: "高脚杯深蹲", 三头下压: "哑铃臂屈伸", 面拉: "弹力带面拉", 深蹲: "高脚杯深蹲", 硬拉: "哑铃硬拉" },
+      bodyweight: { 卧推: "俯卧撑", 哑铃卧推: "俯卧撑", 肩上推举: "倒V俯卧撑", 高位下拉: "反向划船", 坐姿划船: "反向划船", 杠铃划船: "反向划船", 深蹲: "徒手深蹲", 腿举: "箭步蹲", 硬拉: "单腿臀桥", 罗马尼亚硬拉: "单腿臀桥", 三头下压: "窄距俯卧撑", 二头弯举: "毛巾弯举", 面拉: "俯卧Y字伸展" },
     };
-    const equipmentMeta = {
-      gym: "优先杠铃、器械和绳索，主项后接辅助动作。",
-      dumbbell: "用哑铃、弹力带和单侧动作替代器械。",
-      bodyweight: "以徒手、慢速离心、停顿和高次数提高刺激。",
-    };
-    const titles = goalTemplates[goal] || goalTemplates.muscle_gain;
-    const meta = levelMeta[level] || levelMeta.intermediate;
-    const equipmentNote = equipmentMeta[equipment] || equipmentMeta.gym;
-    return titles.slice(0, Number(days)).map((title, index) => ({
+    const prescription = {
+      beginner: { sets: 3, reps: 10, rpe: 7 },
+      intermediate: { sets: 4, reps: 8, rpe: 8 },
+      advanced: { sets: 4, reps: 6, rpe: 8 },
+    }[level] || { sets: 4, reps: 8, rpe: 8 };
+    const sessions = templates[goal] || templates.muscle_gain;
+    return sessions.slice(0, Number(days)).map(([title, names], index) => ({
       day: `第 ${index + 1} 天`,
       title,
-      detail: `${meta.volume}；${meta.effort}。${equipmentNote}`,
+      exercises: names.map((name) => ({
+        name: replacements[equipment]?.[name] || name,
+        sets: goal === "recovery" ? 2 : prescription.sets,
+        reps: goal === "strength" && index < 3 ? Math.max(3, prescription.reps - 3) : prescription.reps,
+        rpe: goal === "recovery" ? 6 : prescription.rpe,
+      })),
     }));
   }
 
@@ -716,20 +824,130 @@
     els.planBadge.textContent = `${plan.days} 天 · ${plan.goalLabel || plan.focusLabel || "训练"}`;
     els.planSummary.innerHTML = plan.items
       .map(
-        (item) => `
+        (item, index) => `
           <article class="plan-day">
             <strong>${item.day} · ${item.title}</strong>
-            <small>${item.detail}</small>
+            <small>${item.exercises?.length ? item.exercises.map((exercise) => `${escapeHtml(exercise.name)} ${exercise.sets}×${exercise.reps} RPE ${exercise.rpe}`).join(" · ") : item.detail}</small>
+            ${item.exercises?.length ? `<button class="secondary-button plan-start" type="button" data-plan-day="${index}">加入今日训练</button>` : ""}
           </article>
         `,
       )
       .join("");
   }
 
+  function workoutExercises(workout) {
+    if (Array.isArray(workout.exercises)) {
+      return workout.exercises.map((exercise) => ({ ...exercise, sets: Array.isArray(exercise.sets) ? exercise.sets : [] }));
+    }
+    if (!workout.exercise?.name) return [];
+    return [{
+      id: workout.exercise.id || makeId(),
+      name: workout.exercise.name,
+      sets: Array.from({ length: Number(workout.exercise.sets) || 1 }, () => ({
+        id: makeId(),
+        weight: Number(workout.exercise.weight) || 0,
+        reps: Number(workout.exercise.reps) || 0,
+        rpe: Number(workout.exercise.rpe) || 0,
+      })),
+    }];
+  }
+
   function exerciseLogs() {
     return state.workouts
-      .filter((item) => item.exercise?.name && item.exercise?.weight && item.exercise?.reps)
-      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+      .flatMap((workout) => workoutExercises(workout).map((exercise) => ({ ...workout, exercise })))
+      .filter((item) => item.exercise.name && item.exercise.sets.some((set) => set.reps))
+      .sort(compareRecordsDesc);
+  }
+
+  function exerciseRecords(name) {
+    return exerciseLogs().filter((item) => item.exercise.name === name);
+  }
+
+  function exerciseNames() {
+    const counts = new Map();
+    exerciseLogs().forEach((item) => {
+      counts.set(item.exercise.name, (counts.get(item.exercise.name) || 0) + 1);
+    });
+    return [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([name]) => name).slice(0, 8);
+  }
+
+  function latestExerciseName() {
+    return activeExerciseName || els.exerciseName.value.trim() || exerciseLogs()[0]?.exercise.name || "";
+  }
+
+  function exerciseMetrics(exercise) {
+    const sets = exercise.sets.filter((set) => Number(set.reps) > 0);
+    const topSet = [...sets].sort((a, b) => (Number(b.weight) * (1 + Number(b.reps) / 30)) - (Number(a.weight) * (1 + Number(a.reps) / 30)))[0] || {};
+    const volume = sets.reduce((sum, set) => sum + Number(set.weight || 0) * Number(set.reps || 0), 0);
+    const rpes = sets.map((set) => Number(set.rpe)).filter(Boolean);
+    return {
+      setCount: sets.length,
+      topSet,
+      volume,
+      averageRpe: rpes.length ? rpes.reduce((sum, value) => sum + value, 0) / rpes.length : 0,
+      estimatedMax: Number(topSet.weight || 0) * (1 + Number(topSet.reps || 0) / 30),
+    };
+  }
+
+  function renderExerciseLibrary() {
+    const names = exerciseNames();
+    if (!names.length) {
+      els.exerciseLibrary.innerHTML = '<div class="empty-state">完成力量训练后，会在这里出现快捷入口。</div>';
+      els.exerciseHint.textContent = "记录后会自动沉淀";
+      return;
+    }
+    const selected = latestExerciseName();
+    els.exerciseHint.textContent = selected ? `当前：${selected}` : `${names.length} 个动作`;
+    els.exerciseLibrary.innerHTML = names.map((name) => {
+      const latest = exerciseRecords(name)[0]?.exercise;
+      const metrics = latest ? exerciseMetrics(latest) : null;
+      return `
+        <button class="exercise-chip ${name === selected ? "active" : ""}" type="button" data-exercise-name="${escapeHtml(name)}">
+          <strong>${escapeHtml(name)}</strong>
+          <span>${metrics?.topSet.weight || 0}kg × ${metrics?.topSet.reps || 0} · ${metrics?.setCount || 0} 组</span>
+        </button>`;
+    }).join("");
+  }
+
+  function fillExerciseFromHistory(name) {
+    const latest = exerciseRecords(name)[0]?.exercise;
+    activeExerciseName = name;
+    els.exerciseName.value = name;
+    if (!latest) return;
+    const metrics = exerciseMetrics(latest);
+    els.exerciseWeight.value = metrics.topSet.weight || 0;
+    els.exerciseSets.value = metrics.setCount || 3;
+    els.exerciseReps.value = metrics.topSet.reps || 8;
+    els.exerciseRpe.value = Math.round(metrics.averageRpe) || 8;
+  }
+
+  function renderExerciseHistory() {
+    const name = latestExerciseName();
+    if (!name) {
+      els.exerciseHistoryTitle.textContent = "最近动作";
+      els.exerciseHistorySummary.textContent = "暂无记录";
+      els.exerciseHistoryList.innerHTML = '<div class="empty-state">选择一个常练动作后，这里会显示表现趋势。</div>';
+      return;
+    }
+    const records = exerciseRecords(name);
+    els.exerciseHistoryTitle.textContent = name;
+    if (!records.length) {
+      els.exerciseHistorySummary.textContent = "新动作";
+      els.exerciseHistoryList.innerHTML = '<div class="empty-state">完成一次后会生成训练容量和强度趋势。</div>';
+      return;
+    }
+    const latest = exerciseMetrics(records[0].exercise);
+    const oldest = exerciseMetrics(records[records.length - 1].exercise);
+    const diff = latest.estimatedMax - oldest.estimatedMax;
+    els.exerciseHistorySummary.textContent = records.length > 1 ? `${records.length} 次 · 估算力量 ${diff >= 0 ? "+" : ""}${diff.toFixed(1)}kg` : "已记录 1 次";
+    els.exerciseHistoryList.innerHTML = records.slice(0, 5).map((item) => {
+      const metrics = exerciseMetrics(item.exercise);
+      return `
+        <article class="list-item">
+          <div><strong>${metrics.topSet.weight || 0}kg × ${metrics.topSet.reps || 0} · ${metrics.setCount} 组</strong><small>${item.date} · 容量 ${Math.round(metrics.volume)}kg${metrics.averageRpe ? ` · 平均 RPE ${metrics.averageRpe.toFixed(1)}` : ""}</small></div>
+          <b>≈ ${metrics.estimatedMax.toFixed(1)}kg</b>
+        </article>`;
+    }).join("");
   }
 
   function renderOverload() {
@@ -738,43 +956,161 @@
       els.overloadText.textContent = "记录动作、重量、次数和 RPE 后，BOD 会判断下次该加重量、加次数、维持还是降负荷。";
       return;
     }
-
     const latest = logs[0];
-    const sameExercise = logs.filter((item) => item.exercise.name === latest.exercise.name);
-    const current = latest.exercise;
-    const currentRpe = Number(current.rpe || 0);
-    if (sameExercise.length < 2) {
-      const firstAdvice =
-        currentRpe >= 9
-          ? "这次已经接近力竭，下次先维持重量，把动作质量和次数稳定住。"
-          : "下次先尝试同重量多 1-2 次，稳定后再加重量。";
-      els.overloadText.textContent = `${current.name} 已记录 ${current.weight}kg × ${current.sets || "-"} 组 × ${current.reps} 次，RPE ${currentRpe || "未记录"}。${firstAdvice}`;
+    const history = exerciseRecords(latest.exercise.name);
+    const current = exerciseMetrics(latest.exercise);
+    if (history.length < 2) {
+      els.overloadText.textContent = `${latest.exercise.name} 已完成 ${current.setCount} 组，最高 ${current.topSet.weight || 0}kg × ${current.topSet.reps || 0}。下次先尝试同重量每组多 1 次。`;
       return;
     }
+    const previous = exerciseMetrics(history[1].exercise);
+    if (current.averageRpe >= 9.5 && current.estimatedMax <= previous.estimatedMax) {
+      els.overloadText.textContent = `${latest.exercise.name} 本次压力偏高且表现未提升。下次建议降低 5-10% 重量或减少 1 组，把 RPE 控制在 7-8。`;
+    } else if (current.estimatedMax > previous.estimatedMax * 1.015 && current.averageRpe <= 8.5) {
+      const step = Number(current.topSet.weight) < 40 ? "1-2.5kg" : "2.5-5kg";
+      els.overloadText.textContent = `${latest.exercise.name} 的估算力量和训练容量正在提升。下次可加 ${step}，或保持重量每组多做 1 次。`;
+    } else {
+      els.overloadText.textContent = `${latest.exercise.name} 最近表现稳定。下次保持 ${current.topSet.weight || 0}kg，优先让全部组达到 ${Number(current.topSet.reps || 0) + 1} 次且 RPE 不超过 8。`;
+    }
+  }
 
-    const previous = sameExercise[1].exercise;
-    const previousRpe = Number(previous.rpe || 0);
-    const repsUp = Number(current.reps) >= Number(previous.reps) + 2;
-    const weightUp = Number(current.weight) > Number(previous.weight);
-    const performanceDown = Number(current.reps) + 2 <= Number(previous.reps) && Number(current.weight) <= Number(previous.weight);
+  function recordActions(kind, id) {
+    return `
+      <div class="record-actions">
+        <button type="button" data-edit-kind="${kind}" data-record-id="${id}">编辑</button>
+        <button type="button" data-delete-kind="${kind}" data-record-id="${id}">删除</button>
+      </div>`;
+  }
 
-    if (currentRpe >= 10 || (performanceDown && currentRpe >= 9)) {
-      els.overloadText.textContent = `${current.name} 这次压力偏高。下次建议降负荷 5-10%，或减少 1 组，把 RPE 控制在 7-8。`;
+  function ensureActiveWorkout() {
+    if (!state.activeWorkout) {
+      state.activeWorkout = {
+        date: els.workoutDate.value || todayKey(),
+        type: els.workoutType.value || "strength",
+        minutes: Number(els.workoutMinutes.value) || 45,
+        intensity: els.workoutIntensity.value || "moderate",
+        note: els.workoutNote.value.trim(),
+        exercises: [],
+      };
+    }
+    if (!Array.isArray(state.activeWorkout.exercises)) state.activeWorkout.exercises = [];
+    return state.activeWorkout;
+  }
+
+  function syncActiveWorkoutMeta() {
+    const draft = ensureActiveWorkout();
+    draft.date = els.workoutDate.value || todayKey();
+    draft.type = els.workoutType.value;
+    draft.minutes = Number(els.workoutMinutes.value) || 45;
+    draft.intensity = els.workoutIntensity.value;
+    draft.note = els.workoutNote.value.trim();
+    saveState();
+  }
+
+  function renderActiveWorkout() {
+    const draft = state.activeWorkout;
+    const exercises = draft?.exercises || [];
+    const setCount = exercises.reduce((sum, exercise) => sum + exercise.sets.length, 0);
+    els.sessionSetCount.textContent = `${exercises.length} 个动作 · ${setCount} 组`;
+    els.finishWorkoutButton.textContent = exercises.length ? "完成并保存训练" : "保存本次训练";
+    if (!exercises.length) {
+      els.sessionExerciseList.innerHTML = '<div class="empty-state">力量训练可添加多个动作；有氧训练可以直接保存。</div>';
       return;
     }
+    els.sessionExerciseList.innerHTML = exercises.map((exercise) => `
+      <article class="session-exercise">
+        <div class="session-exercise-head">
+          <strong>${escapeHtml(exercise.name)}</strong>
+          <button type="button" data-remove-exercise="${exercise.id}" aria-label="移除 ${escapeHtml(exercise.name)}">删除动作</button>
+        </div>
+        <details class="session-sets">
+          <summary>${exercise.sets.length} 组 · ${exercise.sets[0]?.weight || 0}kg × ${exercise.sets[0]?.reps || 0} · RPE ${exercise.sets[0]?.rpe || "-"}</summary>
+          <div class="set-list">
+            ${exercise.sets.map((set, index) => `
+              <div class="set-row">
+                <span>第 ${index + 1} 组</span>
+                <label>kg<input type="number" min="0" max="500" step="0.5" value="${set.weight || 0}" data-set-field="weight" data-set-id="${set.id}" data-exercise-id="${exercise.id}" /></label>
+                <label>次<input type="number" min="1" max="100" value="${set.reps || 1}" data-set-field="reps" data-set-id="${set.id}" data-exercise-id="${exercise.id}" /></label>
+                <label>RPE<select data-set-field="rpe" data-set-id="${set.id}" data-exercise-id="${exercise.id}">${[6, 7, 8, 9, 10].map((value) => `<option value="${value}" ${Number(set.rpe) === value ? "selected" : ""}>${value}</option>`).join("")}</select></label>
+                <button type="button" data-remove-set="${set.id}" data-exercise-id="${exercise.id}" aria-label="删除第 ${index + 1} 组">×</button>
+              </div>`).join("")}
+          </div>
+        </details>
+      </article>`).join("");
+  }
 
-    if ((repsUp || weightUp) && currentRpe <= 8) {
-      els.overloadText.textContent = `${current.name} 有稳定进步。下次可以加 ${current.weight < 40 ? "1-2.5kg" : "2.5-5kg"}，或保持重量把每组次数再提高 1 次。`;
-      return;
-    }
+  function startPlanDay(index) {
+    const item = state.trainingPlan?.items?.[index];
+    if (!item?.exercises?.length) return;
+    const draft = ensureActiveWorkout();
+    draft.type = "strength";
+    draft.exercises = item.exercises.map((planned) => {
+      const previous = exerciseRecords(planned.name)[0]?.exercise;
+      const previousMetrics = previous ? exerciseMetrics(previous) : null;
+      const weight = Number(previousMetrics?.topSet.weight || 0);
+      return {
+        id: makeId(),
+        name: planned.name,
+        sets: Array.from({ length: planned.sets }, () => ({ id: makeId(), weight, reps: planned.reps, rpe: planned.rpe })),
+      };
+    });
+    state.activeWorkout = draft;
+    saveState();
+    restoreActiveWorkoutFields();
+    renderActiveWorkout();
+    setTrainingView("today");
+    showToast("计划已加入今日训练");
+  }
 
-    if ((repsUp || weightUp) && currentRpe >= 9) {
-      els.overloadText.textContent = `${current.name} 虽然进步了，但已经接近力竭。下次先维持 ${current.weight}kg，目标把 RPE 从 ${currentRpe} 降到 8 左右。`;
-      return;
-    }
+  function restoreActiveWorkoutFields() {
+    const draft = state.activeWorkout;
+    els.workoutDate.value = draft?.date || todayKey();
+    els.workoutType.value = draft?.type || "strength";
+    els.workoutMinutes.value = draft?.minutes || 45;
+    els.workoutIntensity.value = draft?.intensity || "moderate";
+    els.workoutNote.value = draft?.note || "";
+  }
 
-    const rpeHint = previousRpe && currentRpe ? `上次 RPE ${previousRpe}，这次 RPE ${currentRpe}。` : "";
-    els.overloadText.textContent = `${current.name} 最近表现接近上次。${rpeHint}下次先保持 ${current.weight}kg，目标每组多做 1 次或让动作更稳。`;
+  function setTrainingView(view) {
+    document.querySelectorAll("[data-training-view]").forEach((button) => button.classList.toggle("active", button.dataset.trainingView === view));
+    document.querySelectorAll("[data-training-panel]").forEach((panel) => panel.classList.toggle("active", panel.dataset.trainingPanel === view));
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function weeklyStreak() {
+    const activeDates = new Set([
+      ...state.workouts.map((item) => item.date),
+      ...state.meals.map((item) => item.date),
+      ...state.weights.map((item) => item.date),
+      ...Object.keys(state.water).filter((date) => Number(state.water[date]) > 0),
+    ]);
+    let streak = 0;
+    const startOffset = activeDates.has(todayKey()) ? 0 : 1;
+    while (activeDates.has(dateOffset(startOffset + streak))) streak += 1;
+    return streak;
+  }
+
+  function renderWeeklySummary() {
+    const cutoff = dateOffset(6);
+    const workouts = state.workouts.filter((item) => item.date >= cutoff);
+    const minutes = workouts.reduce((sum, item) => sum + Number(item.minutes || 0), 0);
+    const volume = workouts.flatMap(workoutExercises).reduce((sum, exercise) => sum + exerciseMetrics(exercise).volume, 0);
+    const rpes = workouts.flatMap(workoutExercises).flatMap((exercise) => exercise.sets.map((set) => Number(set.rpe)).filter(Boolean));
+    const averageRpe = rpes.length ? rpes.reduce((sum, value) => sum + value, 0) / rpes.length : 0;
+    const proteinDays = Array.from({ length: 7 }, (_, index) => dateOffset(index)).filter((date) => {
+      const protein = state.meals.filter((item) => item.date === date).reduce((sum, item) => sum + Number(item.protein || 0), 0);
+      return protein >= dietPlan().protein * 0.85;
+    }).length;
+    els.weeklyStreak.textContent = `连续 ${weeklyStreak()} 天`;
+    els.weeklySummary.innerHTML = [
+      ["训练次数", `${workouts.length} 次`],
+      ["训练时长", `${minutes} 分钟`],
+      ["力量容量", `${Math.round(volume)} kg`],
+      ["蛋白达标", `${proteinDays} 天`],
+    ].map(([label, value]) => `<article><span>${label}</span><strong>${value}</strong></article>`).join("");
+    if (!workouts.length) els.weeklyAdvice.textContent = "本周还没有训练记录，从一次 20-30 分钟的轻量训练开始。";
+    else if (workouts.length >= 5 || averageRpe >= 9) els.weeklyAdvice.textContent = "本周训练压力偏高，下一次优先安排恢复、拉伸或降低 5-10% 负荷。";
+    else els.weeklyAdvice.textContent = `本周已完成 ${workouts.length} 次训练，平均 RPE ${averageRpe ? averageRpe.toFixed(1) : "未记录"}。保持动作质量，再逐步增加重量或次数。`;
   }
 
   function render() {
@@ -784,10 +1120,14 @@
     renderMealList();
     renderTrainingPlan();
     renderOverload();
+    renderExerciseLibrary();
+    renderExerciseHistory();
+    renderActiveWorkout();
     renderWorkoutList();
     renderWeightList();
     renderWeightChart();
     renderCalorieBars();
+    renderWeeklySummary();
   }
 
   function escapeHtml(value) {
@@ -797,6 +1137,70 @@
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;")
       .replace(/'/g, "&#039;");
+  }
+
+  function openRecordEditor(kind, id) {
+    const collections = { meal: state.meals, workout: state.workouts, weight: state.weights };
+    const record = collections[kind]?.find((item) => item.id === id);
+    if (!record) return;
+    editingRecord = { kind, id };
+    const dateField = `<label>日期<input name="date" type="date" value="${record.date}" required /></label>`;
+    if (kind === "meal") {
+      els.recordDialogTitle.textContent = "编辑饮食";
+      els.recordEditFields.innerHTML = `${dateField}
+        <label>食物名称<input name="name" type="text" maxlength="40" value="${escapeHtml(record.name)}" required /></label>
+        <div class="inline-fields"><label>热量 kcal<input name="calories" type="number" min="1" max="5000" value="${record.calories}" required /></label><label>蛋白质 g<input name="protein" type="number" min="0" max="300" value="${record.protein || 0}" /></label></div>`;
+    } else if (kind === "weight") {
+      els.recordDialogTitle.textContent = "编辑体重";
+      els.recordEditFields.innerHTML = `${dateField}<label>体重 kg<input name="value" type="number" min="20" max="300" step="0.1" value="${record.value}" required /></label>`;
+    } else {
+      els.recordDialogTitle.textContent = "编辑训练";
+      els.recordEditFields.innerHTML = `${dateField}
+        <label>训练类型<select name="type">${Object.entries(workoutTypes).map(([value, meta]) => `<option value="${value}" ${record.type === value ? "selected" : ""}>${meta.label}</option>`).join("")}</select></label>
+        <div class="inline-fields"><label>时长<input name="minutes" type="number" min="1" max="360" value="${record.minutes}" required /></label><label>强度<select name="intensity">${Object.entries(intensityMultiplier).map(([value, meta]) => `<option value="${value}" ${record.intensity === value ? "selected" : ""}>${meta.label}</option>`).join("")}</select></label></div>
+        <label>备注<input name="note" type="text" maxlength="80" value="${escapeHtml(record.note || "")}" /></label>`;
+    }
+    els.recordDialog.showModal();
+  }
+
+  function saveEditedRecord(form) {
+    if (!editingRecord) return;
+    const collections = { meal: state.meals, workout: state.workouts, weight: state.weights };
+    const record = collections[editingRecord.kind]?.find((item) => item.id === editingRecord.id);
+    if (!record) return;
+    const data = Object.fromEntries(new FormData(form));
+    record.date = data.date;
+    if (editingRecord.kind === "meal") {
+      record.name = data.name.trim();
+      record.calories = Number(data.calories);
+      record.protein = Number(data.protein) || 0;
+    } else if (editingRecord.kind === "weight") {
+      record.value = Number(data.value);
+      state.profile.currentWeight = latestWeightRecord()?.value || record.value;
+    } else {
+      record.type = data.type;
+      record.minutes = Number(data.minutes);
+      record.intensity = data.intensity;
+      record.note = data.note.trim();
+      record.calories = estimateWorkoutCalories(record.type, record.minutes, record.intensity, currentWeight());
+    }
+    saveState();
+    els.recordDialog.close();
+    editingRecord = null;
+    updateAchievements(false);
+    render();
+    showToast("记录已修改");
+  }
+
+  function deleteRecord(kind, id) {
+    const key = { meal: "meals", workout: "workouts", weight: "weights" }[kind];
+    if (!key || !window.confirm("确认删除这条记录吗？")) return;
+    state[key] = state[key].filter((item) => item.id !== id);
+    if (kind === "weight") state.profile.currentWeight = latestWeightRecord()?.value || state.profile.currentWeight;
+    saveState();
+    updateAchievements(false);
+    render();
+    showToast("记录已删除");
   }
 
   function openSettings(isOnboarding) {
@@ -809,6 +1213,8 @@
     els.heightInput.value = state.profile.height;
     els.profileWeightInput.value = currentWeight();
     els.goalInput.value = state.profile.goal;
+    els.activityInput.value = state.profile.activityLevel || "light";
+    els.goalPaceInput.value = state.profile.goalPace || "steady";
     els.settingsDialog.dataset.onboarding = isOnboarding ? "true" : "false";
     els.settingsDialog.showModal();
   }
@@ -889,6 +1295,10 @@
     });
   });
 
+  document.querySelectorAll("[data-training-view]").forEach((button) => {
+    button.addEventListener("click", () => setTrainingView(button.dataset.trainingView));
+  });
+
   els.foodCategories.addEventListener("click", (event) => {
     const button = event.target.closest("[data-food-category]");
     if (!button) return;
@@ -923,7 +1333,7 @@
     const customEstimate = manualName ? estimateCustomMeal(manualName) : estimate;
     state.meals.push({
       id: makeId(),
-      date: todayKey(),
+      date: els.mealDate.value || todayKey(),
       name: manualName || estimate.name,
       calories: manualCalories || customEstimate.calories,
       protein: manualProtein || customEstimate.protein,
@@ -932,6 +1342,7 @@
       createdAt: new Date().toISOString(),
     });
     els.mealForm.reset();
+    els.mealDate.value = todayKey();
     saveState();
     updateAchievements();
     render();
@@ -962,44 +1373,115 @@
     showToast("训练计划已生成");
   });
 
+  els.planSummary.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-plan-day]");
+    if (!button) return;
+    startPlanDay(Number(button.dataset.planDay));
+  });
+
+  els.exerciseLibrary.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-exercise-name]");
+    if (!button) return;
+    fillExerciseFromHistory(button.dataset.exerciseName);
+    renderExerciseLibrary();
+    renderExerciseHistory();
+    showToast("已填入上次记录");
+  });
+
+  els.exerciseName.addEventListener("input", () => {
+    activeExerciseName = els.exerciseName.value.trim();
+  });
+
   els.workoutForm.addEventListener("submit", (event) => {
     event.preventDefault();
-    const type = els.workoutType.value;
-    const minutes = Number(els.workoutMinutes.value);
-    const intensity = els.workoutIntensity.value;
-    const calories = estimateWorkoutCalories(type, minutes, intensity, currentWeight());
-    const exerciseName = els.exerciseName.value.trim();
-    const exercise = exerciseName
-      ? {
-          name: exerciseName,
-          weight: Number(els.exerciseWeight.value) || 0,
-          sets: Number(els.exerciseSets.value) || 0,
-          reps: Number(els.exerciseReps.value) || 0,
-          rpe: Number(els.exerciseRpe.value) || 0,
-        }
-      : null;
+    syncActiveWorkoutMeta();
+  });
 
+  [els.workoutDate, els.workoutType, els.workoutMinutes, els.workoutIntensity, els.workoutNote].forEach((input) => {
+    input.addEventListener("change", syncActiveWorkoutMeta);
+  });
+
+  els.exerciseForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const exerciseName = els.exerciseName.value.trim();
+    if (!exerciseName) {
+      showToast("请先填写动作名称");
+      return;
+    }
+    syncActiveWorkoutMeta();
+    const draft = ensureActiveWorkout();
+    let exercise = draft.exercises.find((item) => item.name === exerciseName);
+    if (!exercise) {
+      exercise = { id: makeId(), name: exerciseName, sets: [] };
+      draft.exercises.push(exercise);
+    }
+    const setCount = Number(els.exerciseSets.value) || 1;
+    for (let index = 0; index < setCount; index += 1) {
+      exercise.sets.push({
+        id: makeId(),
+        weight: Number(els.exerciseWeight.value) || 0,
+        reps: Number(els.exerciseReps.value) || 0,
+        rpe: Number(els.exerciseRpe.value) || 0,
+      });
+    }
+    activeExerciseName = exerciseName;
+    els.exerciseName.value = "";
+    saveState();
+    renderActiveWorkout();
+    showToast(`已添加 ${setCount} 组`);
+  });
+
+  els.sessionExerciseList.addEventListener("click", (event) => {
+    const setButton = event.target.closest("[data-remove-set]");
+    const exerciseButton = event.target.closest("[data-remove-exercise]");
+    const draft = ensureActiveWorkout();
+    if (setButton) {
+      const exercise = draft.exercises.find((item) => item.id === setButton.dataset.exerciseId);
+      if (exercise) exercise.sets = exercise.sets.filter((set) => set.id !== setButton.dataset.removeSet);
+      draft.exercises = draft.exercises.filter((item) => item.sets.length);
+    } else if (exerciseButton) {
+      draft.exercises = draft.exercises.filter((item) => item.id !== exerciseButton.dataset.removeExercise);
+    } else {
+      return;
+    }
+    saveState();
+    renderActiveWorkout();
+  });
+
+  els.sessionExerciseList.addEventListener("input", (event) => {
+    const input = event.target.closest("[data-set-field]");
+    if (!input) return;
+    const draft = ensureActiveWorkout();
+    const exercise = draft.exercises.find((item) => item.id === input.dataset.exerciseId);
+    const set = exercise?.sets.find((item) => item.id === input.dataset.setId);
+    if (!set) return;
+    set[input.dataset.setField] = Number(input.value) || 0;
+    saveState();
+  });
+
+  els.finishWorkoutButton.addEventListener("click", () => {
+    syncActiveWorkoutMeta();
+    const draft = ensureActiveWorkout();
+    if (!draft.minutes) return;
     state.workouts.push({
       id: makeId(),
-      date: todayKey(),
-      type,
-      minutes,
-      intensity,
-      note: els.workoutNote.value.trim(),
-      exercise,
-      calories,
+      date: draft.date,
+      type: draft.type,
+      minutes: draft.minutes,
+      intensity: draft.intensity,
+      note: draft.note,
+      exercises: draft.exercises,
+      calories: estimateWorkoutCalories(draft.type, draft.minutes, draft.intensity, currentWeight()),
       createdAt: new Date().toISOString(),
     });
-
-    els.workoutNote.value = "";
-    els.exerciseName.value = "";
-    els.exerciseWeight.value = "";
-    els.exerciseSets.value = "";
-    els.exerciseReps.value = "";
-    els.exerciseRpe.value = "";
+    state.activeWorkout = null;
+    activeExerciseName = draft.exercises[0]?.name || activeExerciseName;
+    restoreActiveWorkoutFields();
     saveState();
     updateAchievements();
     render();
+    setTrainingView("history");
+    showToast("训练已完成");
   });
 
   els.weightForm.addEventListener("submit", (event) => {
@@ -1007,13 +1489,14 @@
     const value = Number(els.weightInput.value);
     state.weights.push({
       id: makeId(),
-      date: todayKey(),
+      date: els.weightDate.value || todayKey(),
       value,
       createdAt: new Date().toISOString(),
     });
-    state.profile.currentWeight = value;
-    els.profileWeightInput.value = value;
+    state.profile.currentWeight = latestWeightRecord()?.value || value;
+    els.profileWeightInput.value = state.profile.currentWeight;
     els.weightInput.value = "";
+    els.weightDate.value = todayKey();
     saveState();
     updateAchievements();
     render();
@@ -1021,7 +1504,7 @@
 
   document.querySelectorAll("[data-water]").forEach((button) => {
     button.addEventListener("click", () => {
-      addWater(Number(button.dataset.water));
+      addWater(Number(button.dataset.water), els.waterDate.value || todayKey());
       updateAchievements();
       render();
     });
@@ -1031,7 +1514,7 @@
     event.preventDefault();
     const amount = Number(els.waterInput.value);
     if (!amount) return;
-    addWater(amount);
+    addWater(amount, els.waterDate.value || todayKey());
     els.waterInput.value = "";
     updateAchievements();
     render();
@@ -1047,10 +1530,29 @@
     state.profile.height = Number(els.heightInput.value);
     state.profile.currentWeight = Number(els.profileWeightInput.value);
     state.profile.goal = els.goalInput.value;
+    state.profile.activityLevel = els.activityInput.value;
+    state.profile.goalPace = els.goalPaceInput.value;
     state.profile.onboarded = true;
     saveState();
     els.settingsDialog.close();
     render();
+  });
+
+  document.addEventListener("click", (event) => {
+    const editButton = event.target.closest("[data-edit-kind]");
+    const deleteButton = event.target.closest("[data-delete-kind]");
+    if (editButton) openRecordEditor(editButton.dataset.editKind, editButton.dataset.recordId);
+    if (deleteButton) deleteRecord(deleteButton.dataset.deleteKind, deleteButton.dataset.recordId);
+  });
+
+  els.recordEditForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    saveEditedRecord(els.recordEditForm);
+  });
+
+  els.recordDialogClose.addEventListener("click", () => {
+    editingRecord = null;
+    els.recordDialog.close();
   });
 
   els.shareButton.addEventListener("click", async () => {
@@ -1085,6 +1587,10 @@
     }
   });
 
+  els.mealDate.value = todayKey();
+  els.weightDate.value = todayKey();
+  els.waterDate.value = todayKey();
+  restoreActiveWorkoutFields();
   updateAchievements(false);
   renderInstallGuide();
   render();
